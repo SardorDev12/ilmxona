@@ -1,15 +1,15 @@
-# Bilim — Product Requirements Document (PRD)
+# Ilmxona — Product Requirements Document (PRD)
 
 ## 1. Product Overview
 
-- **Product name:** Bilim
+- **Product name:** Ilmxona
 - **Product type:** Web-based educational knowledge platform
 - **Primary language:** Uzbek
 - **Target market:** Uzbekistan and Uzbek-speaking users worldwide
 
 ### Product vision
 
-Bilim is a free, structured online knowledge platform where users can learn practical and academic subjects in Uzbek through concise lessons, examples, exercises, quizzes, and structured learning paths.
+Ilmxona is a free, structured online knowledge platform where users can learn practical and academic subjects in Uzbek through concise lessons, examples, exercises, quizzes, and structured learning paths.
 
 The initial product will focus on IT and programming, with architecture designed to support additional subjects later.
 
