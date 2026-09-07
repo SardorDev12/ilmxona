@@ -1,12 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { supabaseEnv } from "./env";
 
 /**
  * Supabase client for use in Client Components ("use client").
  * Reads/writes the session via document.cookie.
  */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  const { url, anonKey } = supabaseEnv();
+  return createBrowserClient(url, anonKey);
 }
