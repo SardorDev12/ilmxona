@@ -1,0 +1,58 @@
+// Ilmxona — Prisma schema
+//
+// Phase 1 (Foundation) scope only: authentication/profile + roles + admin
+// audit trail. Course, lesson, exercise, quiz, etc. are added in later
+// phases — see docs/PRD.md §37 "Core Database Entities" for the full model.
+//
+// Auth users themselves live in Supabase's own `auth.users` table (outside
+// Prisma's control). `Profile.id` mirrors `auth.users.id` 1:1 and the row is
+// created by a database trigger — see supabase/sql/001_profiles.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URLs live in prisma.config.ts (Prisma 7+), not here.
+}
+
+enum Role {
+  USER
+  CONTRIBUTOR
+  REVIEWER
+  MODERATOR
+  ADMIN
+}
+
+model Profile {
+  id          String   @id @db.Uuid
+  username    String   @unique
+  displayName String?  @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  bio         String?
+  role        Role     @default(USER)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  auditLogs AuditLog[]
+
+  @@map("profiles")
+}
+
+/// Administrative actions (role changes, suspensions, moderation, ...).
+/// Written to by admin-panel server actions in later phases.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actor      Profile  @relation(fields: [actorId], references: [id])
+  actorId    String   @map("actor_id") @db.Uuid
+  action     String
+  targetType String   @map("target_type")
+  targetId   String?  @map("target_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}

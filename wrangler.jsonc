@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ilmxona",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      // Self-reference, required by OpenNext for internal revalidation
+      // requests. Must match "name" above.
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "ilmxona"
+    }
+  ]
+  // --- Optional, add once the resources exist ---
+  //
+  // R2 incremental cache (persists ISR/cache across deploys — otherwise
+  // it's in-memory per Worker instance). Create the bucket first:
+  //   npx wrangler r2 bucket create ilmxona-opennext-cache
+  // then uncomment this block AND swap open-next.config.ts to use
+  // `r2IncrementalCache` (see the commented example in that file).
+  //
+  // "r2_buckets": [
+  //   { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "ilmxona-opennext-cache" }
+  // ],
+  //
+  // Cloudflare Images (for next/image optimization at the edge):
+  // "images": { "binding": "IMAGES" }
+}
