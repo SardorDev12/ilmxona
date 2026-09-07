@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/layout/header";
 import { SiteFooter } from "@/components/layout/footer";
@@ -21,6 +21,13 @@ export const metadata: Metadata = {
   },
   description:
     "Ilmxona — dasturlash va boshqa amaliy fanlarni o'zbek tilida bepul o'rganing: darslar, misollar, mashqlar va testlar bilan.",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#1d4ed8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
