@@ -1,27 +1,31 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata: Metadata = { title: "Admin" };
 
 async function getOverviewStats() {
-  const [totalUsers, contributors, pendingApplications] = await Promise.all([
-    prisma.profile.count(),
-    prisma.profile.count({
-      where: { role: { in: ["CONTRIBUTOR", "REVIEWER"] } },
-    }),
-    // ContributorApplication is added in Phase 5 (Community) — placeholder.
-    Promise.resolve(0),
+  const supabase = await createClient();
+
+  const [totalUsers, contributors] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .in("role", ["CONTRIBUTOR", "REVIEWER"]),
   ]);
 
-  return { totalUsers, contributors, pendingApplications };
+  return {
+    totalUsers: totalUsers.count ?? 0,
+    contributors: contributors.count ?? 0,
+  };
 }
 
 export default async function AdminOverviewPage() {
   // The layout already gates /admin/*, but Next.js can start rendering a
   // page's data fetching before a parent layout's redirect() takes effect
-  // (they're not strictly sequential). Re-checking here avoids firing DB
+  // (they're not strictly sequential). Re-checking here avoids firing
   // queries for a request that's about to be redirected anyway.
   await requireRole("MODERATOR", "/admin");
 
@@ -32,7 +36,7 @@ export default async function AdminOverviewPage() {
     { label: "Mualliflar", value: stats.contributors },
     { label: "Kurslar", value: "—" },
     { label: "Darslar", value: "—" },
-    { label: "Ko'rib chiqilishi kutilmoqda", value: stats.pendingApplications },
+    { label: "Ko'rib chiqilishi kutilmoqda", value: "—" },
     { label: "Shikoyatlar", value: "—" },
   ];
 

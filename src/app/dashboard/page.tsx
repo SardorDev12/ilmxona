@@ -15,7 +15,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">
-            Xush kelibsiz, {profile.displayName ?? profile.username}
+            Xush kelibsiz, {profile.display_name ?? profile.username}
           </h1>
           <Badge variant="primary" className="mt-2">
             {profile.role}

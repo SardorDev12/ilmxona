@@ -1,10 +1,18 @@
 import "server-only";
 
-import type { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { hasRole } from "./roles";
+import { hasRole, type Role } from "./roles";
+
+export type Profile = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  role: Role;
+  created_at: string;
+};
 
 /** The current Supabase auth user, or null if signed out. Server-only. */
 export async function getAuthUser() {
@@ -19,12 +27,21 @@ export async function getAuthUser() {
  * The current user's app-level profile (role, username, ...), joined from
  * Supabase auth + our own `profiles` table. Null if signed out.
  */
-export async function getCurrentProfile() {
-  const user = await getAuthUser();
+export async function getCurrentProfile(): Promise<Profile | null> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  return profile;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, bio, role, created_at")
+    .eq("id", user.id)
+    .single<Profile>();
+
+  return data;
 }
 
 /** Redirects to /login if signed out; otherwise returns the profile. */

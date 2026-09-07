@@ -39,7 +39,7 @@ export default async function AdminLayout({
         <div className="mb-6">
           <p className="text-sm font-semibold">Admin panel</p>
           <p className="text-xs text-muted-foreground">
-            {profile.displayName ?? profile.username} · {profile.role}
+            {profile.display_name ?? profile.username} · {profile.role}
           </p>
         </div>
         <nav className="flex flex-col gap-6">

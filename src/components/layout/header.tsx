@@ -39,7 +39,7 @@ export async function SiteHeader() {
           </ButtonLink>
           {profile ? (
             <ButtonLink href="/dashboard" variant="outline" size="sm">
-              {profile.displayName ?? profile.username}
+              {profile.display_name ?? profile.username}
             </ButtonLink>
           ) : (
             <>

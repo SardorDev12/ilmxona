@@ -1,8 +1,7 @@
-import type { Role } from "@prisma/client";
-
 /**
  * Ordered from least to most privileged, per docs/PRD.md §28.
  * "Visitor" isn't stored — it's simply the absence of a session.
+ * Mirrors the `role` enum in supabase/sql/001_profiles.sql.
  */
 export const ROLE_HIERARCHY = [
   "USER",
@@ -10,7 +9,9 @@ export const ROLE_HIERARCHY = [
   "REVIEWER",
   "MODERATOR",
   "ADMIN",
-] as const satisfies readonly Role[];
+] as const;
+
+export type Role = (typeof ROLE_HIERARCHY)[number];
 
 export function roleRank(role: Role): number {
   return ROLE_HIERARCHY.indexOf(role);
