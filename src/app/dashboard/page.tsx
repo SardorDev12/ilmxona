@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireProfile } from "@/lib/auth/session";
+import { hasRole } from "@/lib/auth/roles";
 import { courses, getCourse, courseLessons, lessonCount } from "@/content";
 import { getLearningPath } from "@/content/paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,11 +64,18 @@ export default async function DashboardPage() {
             </span>
           </div>
         </div>
-        <form action={signOut}>
-          <Button type="submit" variant="outline" size="sm">
-            Chiqish
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          {hasRole(profile.role, "CONTRIBUTOR") && (
+            <ButtonLink href="/contributor/lessons/new" size="sm">
+              Yangi dars
+            </ButtonLink>
+          )}
+          <form action={signOut}>
+            <Button type="submit" variant="outline" size="sm">
+              Chiqish
+            </Button>
+          </form>
+        </div>
       </header>
 
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
