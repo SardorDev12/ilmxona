@@ -2,9 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
+const DEMO_NOTICE =
+  "Hozircha demo rejim: autentifikatsiya backend'i ulanmagan.";
+
 export async function signInWithPassword(formData: FormData) {
+  if (!isSupabaseConfigured()) {
+    redirect(`/login?error=${encodeURIComponent(DEMO_NOTICE)}`);
+  }
+
   const supabase = await createClient();
 
   const email = String(formData.get("email") ?? "");
@@ -24,6 +32,10 @@ export async function signInWithPassword(formData: FormData) {
 }
 
 export async function signUpWithPassword(formData: FormData) {
+  if (!isSupabaseConfigured()) {
+    redirect(`/register?error=${encodeURIComponent(DEMO_NOTICE)}`);
+  }
+
   const supabase = await createClient();
 
   const email = String(formData.get("email") ?? "");
@@ -47,6 +59,10 @@ export async function signUpWithPassword(formData: FormData) {
 }
 
 export async function signInWithGoogle() {
+  if (!isSupabaseConfigured()) {
+    redirect(`/login?error=${encodeURIComponent(DEMO_NOTICE)}`);
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -64,8 +80,11 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  }
+
   revalidatePath("/", "layout");
   redirect("/");
 }

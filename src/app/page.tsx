@@ -1,25 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { courses, latestLessons, totals } from "@/content";
+import { learningPaths } from "@/content/paths";
+import { contributors } from "@/content/contributors";
+import { CourseCard, PathCard, Avatar } from "@/components/content/cards";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button, ButtonLink } from "@/components/ui/button";
 
-const INITIAL_CATEGORIES = [
-  { name: "HTML", description: "Veb-sahifalar tuzilishi" },
-  { name: "CSS", description: "Uslublash va joylashuv" },
-  { name: "JavaScript", description: "Interaktiv dasturlash" },
-  { name: "Git", description: "Versiyalarni boshqarish" },
-  { name: "SQL", description: "Ma'lumotlar bazalari" },
-];
-
 export default function HomePage() {
+  const latest = latestLessons(4);
+
   return (
     <div className="mx-auto max-w-6xl px-4">
-      <section className="flex flex-col items-center gap-6 py-20 text-center">
+      <section className="flex flex-col items-center gap-6 py-16 text-center sm:py-24">
         <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
           O&apos;zbek tilida bepul bilim o&apos;rganing.
         </h1>
-        <p className="max-w-xl text-muted-foreground">
+        <p className="max-w-xl text-lg text-muted-foreground">
           Dasturlash va boshqa amaliy fanlarni darslar, misollar, mashqlar va
-          testlar orqali o&apos;zbek tilida o&apos;rganing.
+          testlar orqali o&apos;rganing.
         </p>
 
         <form
@@ -34,58 +33,144 @@ export default function HomePage() {
           />
           <Button type="submit">Qidirish</Button>
         </form>
+
+        <dl className="mt-4 flex flex-wrap justify-center gap-x-10 gap-y-4 text-sm">
+          <Stat value={totals.courses} label="kurs" />
+          <Stat value={totals.lessons} label="dars" />
+          <Stat value={totals.terms} label="lug'at atamasi" />
+          <Stat value={totals.contributors} label="muallif" />
+        </dl>
       </section>
 
-      <section className="py-12">
-        <h2 className="mb-6 text-2xl font-semibold">Mashhur kategoriyalar</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
-          {INITIAL_CATEGORIES.map((category) => (
-            <Card key={category.name}>
-              <CardHeader>
-                <CardTitle>{category.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                {category.description}
-              </CardContent>
-            </Card>
+      <Section
+        title="Mashhur kurslar"
+        action={{ href: "/courses", label: "Barcha kurslar" }}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {courses.slice(0, 3).map((course) => (
+            <CourseCard key={course.slug} course={course} />
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="py-12">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Mashhur kurslar</h2>
-          <ButtonLink href="/courses" variant="ghost" size="sm">
-            Barchasini ko&apos;rish
-          </ButtonLink>
+      <Section
+        title="O'quv yo'nalishlari"
+        action={{ href: "/learning-paths", label: "Barchasi" }}
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          {learningPaths.map((path) => (
+            <PathCard key={path.slug} path={path} />
+          ))}
         </div>
-        <EmptyState message="Kurslar hali qo'shilmagan. Tez orada bu yerda paydo bo'ladi." />
-      </section>
+      </Section>
 
-      <section className="py-12">
-        <h2 className="mb-6 text-2xl font-semibold">O&apos;quv yo&apos;nalishlari</h2>
-        <EmptyState message="Yo'nalishlar hali qo'shilmagan." />
-      </section>
+      <Section title="So'nggi darslar">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {latest.map(({ course, lesson }) => (
+            <Link
+              key={`${course.slug}-${lesson.slug}`}
+              href={`/courses/${course.slug}/lessons/${lesson.slug}`}
+              className="group rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Card className="h-full transition-shadow group-hover:shadow-md">
+                <CardContent className="flex flex-col gap-1.5 p-4">
+                  <span className="text-xs font-medium uppercase tracking-wide text-primary">
+                    {course.title}
+                  </span>
+                  <h3 className="font-semibold">{lesson.title}</h3>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {lesson.intro}
+                  </p>
+                  <span className="mt-1 text-xs text-muted-foreground">
+                    {lesson.durationMin} daqiqa · yangilandi{" "}
+                    {lesson.updatedAt}
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </Section>
 
-      <section className="py-12">
-        <h2 className="mb-6 text-2xl font-semibold">So&apos;nggi darslar</h2>
-        <EmptyState message="Darslar hali nashr etilmagan." />
-      </section>
+      <Section
+        title="Mualliflar"
+        action={{ href: "/contributors", label: "Barchasi" }}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {contributors.map((person) => (
+            <Link
+              key={person.username}
+              href={`/u/${person.username}`}
+              className="group rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Card className="h-full transition-shadow group-hover:shadow-md">
+                <CardContent className="flex flex-col items-center gap-2 p-5 text-center">
+                  <Avatar name={person.name} size={56} />
+                  <h3 className="font-semibold">{person.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {person.title}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </Section>
 
-      <section className="py-12">
-        <h2 className="mb-6 text-2xl font-semibold">Mualliflar</h2>
-        <EmptyState message="Mualliflar hali qo'shilmagan." />
+      <section className="my-12">
+        <Card className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground">
+          <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
+            <h2 className="text-2xl font-bold">
+              Bilimingiz bilan bo&apos;lishing
+            </h2>
+            <p className="max-w-lg opacity-90">
+              O&apos;zbek tilida sifatli o&apos;quv materiali yozishga
+              qiziqasizmi? Muallif bo&apos;lish uchun ariza qoldiring.
+            </p>
+            <ButtonLink
+              href="/contributor/apply"
+              variant="secondary"
+              className="bg-white text-primary hover:bg-white/90"
+            >
+              Muallif bo&apos;lish
+            </ButtonLink>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
 }
 
-function EmptyState({ message }: { message: string }) {
+function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <Card>
-      <CardContent className="py-10 text-center text-sm text-muted-foreground">
-        {message}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col">
+      <dt className="sr-only">{label}</dt>
+      <dd className="text-2xl font-bold">{value}</dd>
+      <span className="text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: { href: string; label: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="py-8">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+        {action && (
+          <ButtonLink href={action.href} variant="ghost" size="sm">
+            {action.label}
+          </ButtonLink>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }

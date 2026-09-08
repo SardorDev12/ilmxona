@@ -1,28 +1,33 @@
 /**
- * NEXT_PUBLIC_* values are inlined at build time, so a missing one produces
- * a confusing "Invalid URL" deep inside supabase-js rather than something
- * that points at the actual problem (unset variable in the build
- * environment). Fail with the variable name instead.
+ * Supabase is optional while the content is hard-coded. When the env vars
+ * aren't set the app runs in demo mode: a fixed demo profile stands in for
+ * a signed-in user so every page (dashboard, admin) stays reviewable.
+ *
+ * NEXT_PUBLIC_* values are inlined at build time, so these must be present
+ * during the build — not just at runtime — for a real deployment.
  */
-function required(name: string, value: string | undefined): string {
-  if (!value) {
-    throw new Error(
-      `Missing ${name}. Set it in .env.local for local development, or as a ` +
-        `Worker build variable in the Cloudflare dashboard for deploys.`,
-    );
-  }
-  return value;
+export function supabaseEnv() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) return null;
+
+  return { url, anonKey };
 }
 
-export function supabaseEnv() {
-  return {
-    url: required(
-      "NEXT_PUBLIC_SUPABASE_URL",
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-    ),
-    anonKey: required(
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    ),
-  };
+export function isSupabaseConfigured(): boolean {
+  return supabaseEnv() !== null;
+}
+
+/** For call sites that can't proceed without a client. */
+export function requireSupabaseEnv() {
+  const env = supabaseEnv();
+  if (!env) {
+    throw new Error(
+      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and " +
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local, or as Worker build " +
+        "variables in the Cloudflare dashboard.",
+    );
+  }
+  return env;
 }

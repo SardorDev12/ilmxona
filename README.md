@@ -6,17 +6,25 @@ O'zbek tilida bepul bilim o'rganing. Full product spec: [`docs/PRD.md`](docs/PRD
 
 This repo currently implements **Phase 1 — Foundation** only (project setup, database, authentication, design system, user roles, admin foundation). See `docs/PRD.md` §42 for the full phase breakdown.
 
-## Setup
+## Demo mode
+
+**The site currently runs with no backend at all.** All content — courses, lessons, exercises, quizzes, glossary, contributors — is hard-coded in [`src/content/`](src/content), so it builds and deploys with zero configuration.
+
+```bash
+npm install
+npm run dev
+```
+
+When `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` are absent, the app runs in demo mode: a fixed demo profile stands in for a signed-in user so the dashboard and admin panel stay reviewable, and the auth forms report that the backend isn't connected. As soon as those variables are set, real Supabase auth takes over — no code change needed.
+
+The code editor, quizzes and exercises are fully interactive in demo mode; they run entirely in the browser.
+
+## Connecting the backend (later)
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
 3. Enable the **Google** provider under Supabase Auth → Providers (Telegram is not a native Supabase provider — see "Known gaps").
 4. Apply the schema: open the Supabase SQL editor and run [`supabase/sql/001_profiles.sql`](supabase/sql/001_profiles.sql). It creates the `role` enum, `profiles` and `audit_logs` tables, the trigger that auto-creates a profile for every new auth user, and the RLS policies.
-5. Install and run:
-   ```bash
-   npm install
-   npm run dev
-   ```
 
 ## Data access
 
@@ -29,6 +37,8 @@ SQL files in `supabase/sql/` are the source of truth for schema; apply them in f
 ## Project layout
 
 ```
+src/content/              Hard-coded courses, lessons, glossary, paths, contributors
+src/components/content/   Lesson renderer, code playground, quiz, exercise
 supabase/sql/             Schema, triggers and RLS policies (source of truth)
 src/lib/supabase/         Browser/server Supabase clients + session-refresh helper
 src/lib/auth/             Role hierarchy (roles.ts) + requireProfile/requireRole (session.ts)
@@ -60,7 +70,7 @@ npm run cf:deploy    # build + deploy
 
 The build command is required: `wrangler deploy` publishes `.open-next/worker.js` (per `wrangler.jsonc`), which only exists after `cf:build` runs.
 
-Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL` as environment variables on the Worker (Settings → Variables) — `NEXT_PUBLIC_*` values are inlined at build time, so they must be present for the build, not just at runtime.
+No environment variables are required while the site is in demo mode. Once you connect Supabase, set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL` as Worker variables (Settings → Variables) — `NEXT_PUBLIC_*` values are inlined at build time, so they must be present for the build, not just at runtime.
 
 ## Known gaps (intentionally out of Phase 1 scope)
 

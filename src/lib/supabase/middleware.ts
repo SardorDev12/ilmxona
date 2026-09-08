@@ -5,12 +5,17 @@ import { supabaseEnv } from "./env";
 /**
  * Refreshes the Supabase auth session on every request so server components
  * always see a valid (non-expired) token. Called from src/proxy.ts.
+ * No-ops in demo mode (Supabase not configured).
  */
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-  const { url, anonKey } = supabaseEnv();
+  const env = supabaseEnv();
+  if (!env) {
+    return { supabaseResponse: NextResponse.next({ request }), user: null };
+  }
 
-  const supabase = createServerClient(url, anonKey, {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(env.url, env.anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
