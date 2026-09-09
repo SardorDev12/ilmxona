@@ -1,7 +1,7 @@
 "use client";
 
-import type { QuizQuestion } from "@/content/types";
-import { newQuestion } from "@/lib/studio/draft";
+import type { QuizQuestion } from "@/lib/content/types";
+import { newQuestion } from "@/lib/content/editor";
 import { Input, Textarea, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 

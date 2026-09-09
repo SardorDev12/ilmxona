@@ -1,10 +1,15 @@
 import Link from "next/link";
-import type { Course, GlossaryTerm, LearningPath } from "@/content/types";
-import { lessonCount } from "@/content";
+import type { Course, GlossaryTerm, LearningPath } from "@/lib/content/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function CourseCard({ course }: { course: Course }) {
+export function CourseCard({
+  course,
+  lessonCount,
+}: {
+  course: Course;
+  lessonCount?: number;
+}) {
   return (
     <Link
       href={`/courses/${course.slug}`}
@@ -22,9 +27,9 @@ export function CourseCard({ course }: { course: Course }) {
           <p className="text-sm text-muted-foreground">{course.subtitle}</p>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="outline">{course.difficulty}</Badge>
-            <span>{lessonCount(course)} ta dars</span>
+            {lessonCount !== undefined && <span>{lessonCount} ta dars</span>}
             <span aria-hidden>·</span>
-            <span>{course.durationHours} soat</span>
+            <span>{course.duration_hours} soat</span>
           </div>
         </CardContent>
       </Card>
@@ -51,7 +56,7 @@ export function PathCard({ path }: { path: LearningPath }) {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            {path.courseSlugs.length} ta kurs · ~{path.durationMonths} oy
+            ~{path.duration_months} oy
           </p>
         </CardContent>
       </Card>
@@ -95,5 +100,26 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
     >
       {initials}
     </span>
+  );
+}
+
+/** Shown wherever a listing has nothing in it yet. */
+export function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+        <p className="font-medium">{title}</p>
+        <p className="max-w-md text-sm text-muted-foreground">{description}</p>
+        {action}
+      </CardContent>
+    </Card>
   );
 }

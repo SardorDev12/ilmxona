@@ -1,103 +1,54 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useActionState, useState } from "react";
+import { useFormStatus } from "react-dom";
 import {
   ACCENTS,
   CATEGORIES,
   DIFFICULTIES,
-  courseValidationIssues,
-  emptyCourseDraft,
-  getServerCourseDrafts,
-  getStoredCourseDrafts,
-  saveCourseDraft,
-  subscribeToCourseDrafts,
-  type CourseDraft,
-} from "@/lib/studio/course-draft";
-import { STATUS_LABELS, slugify } from "@/lib/studio/draft";
-import type { Difficulty } from "@/content/types";
+  slugify,
+} from "@/lib/content/types";
+import { createCourse, type ContentFormState } from "@/lib/content/mutations";
 import { Input, Textarea, Select, Field } from "@/components/ui/input";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
-  const stored = useSyncExternalStore(
-    subscribeToCourseDrafts,
-    getStoredCourseDrafts,
-    getServerCourseDrafts,
+/**
+ * Course form. Everything is a plain form field so the browser keeps the
+ * values on a failed submit; the pieces held in React state are the ones
+ * the preview and the slug suggestion need to read as you type.
+ */
+export function CourseEditor() {
+  const [state, action] = useActionState<ContentFormState, FormData>(
+    createCourse,
+    {},
   );
 
-  const [draft, setDraft] = useState<CourseDraft>(emptyCourseDraft);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [showIssues, setShowIssues] = useState(false);
-  const [created, setCreated] = useState(false);
-
-  const issues = courseValidationIssues(draft);
-  const slugTaken =
-    draft.slug !== "" &&
-    (takenSlugs.includes(draft.slug) ||
-      stored.some((c) => c.slug === draft.slug && c.id !== draft.id));
-
-  const allIssues = slugTaken
-    ? [...issues, "Bu URL manzili band — boshqasini tanlang."]
-    : issues;
-  const canSubmit = allIssues.length === 0;
-
-  function set<K extends keyof CourseDraft>(key: K, value: CourseDraft[K]) {
-    setDraft({ ...draft, [key]: value });
-  }
-
-  function handleSave() {
-    if (saveCourseDraft(draft)) {
-      setSavedAt(new Date().toLocaleTimeString("uz"));
-      setCreated(true);
-    }
-  }
-
-  function handleSubmit() {
-    setShowIssues(true);
-    if (!canSubmit) return;
-
-    const submitted: CourseDraft = { ...draft, status: "SUBMITTED" };
-    setDraft(submitted);
-    saveCourseDraft(submitted);
-    setCreated(true);
-  }
-
-  const modules = draft.moduleTitles;
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [subtitle, setSubtitle] = useState("");
+  const [difficulty, setDifficulty] = useState(DIFFICULTIES[0]);
+  const [hours, setHours] = useState(10);
+  const [accent, setAccent] = useState(ACCENTS[0].value);
+  const [modules, setModules] = useState<string[]>([""]);
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between gap-3">
-        <Badge variant={draft.status === "DRAFT" ? "default" : "primary"}>
-          {STATUS_LABELS[draft.status]}
-        </Badge>
-        {savedAt && (
-          <span className="text-xs text-muted-foreground">
-            Saqlandi {savedAt}
-          </span>
-        )}
-      </div>
-
+    <form action={action} className="flex flex-col gap-8">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex flex-col gap-5">
           <Field label="Kurs nomi" htmlFor="title">
             <Input
               id="title"
-              value={draft.title}
-              placeholder="Masalan: Python asoslari"
+              name="title"
+              required
+              value={title}
+              placeholder="Masalan: Moliyaviy savodxonlik"
               onChange={(e) => {
-                const title = e.target.value;
-                setDraft({
-                  ...draft,
-                  title,
-                  slug:
-                    draft.slug === "" || draft.slug === slugify(draft.title)
-                      ? slugify(title)
-                      : draft.slug,
-                });
+                setTitle(e.target.value);
+                if (!slugEdited) setSlug(slugify(e.target.value));
               }}
             />
           </Field>
@@ -105,20 +56,18 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
           <Field
             label="URL manzili"
             htmlFor="slug"
-            hint={`/courses/${draft.slug || "..."}`}
+            hint={`/courses/${slug || "..."}`}
           >
             <Input
               id="slug"
-              value={draft.slug}
-              onChange={(e) => set("slug", slugify(e.target.value))}
-              className={slugTaken ? "border-destructive" : undefined}
+              name="slug"
+              value={slug}
+              onChange={(e) => {
+                setSlugEdited(true);
+                setSlug(slugify(e.target.value));
+              }}
             />
           </Field>
-          {slugTaken && (
-            <p className="-mt-3 text-xs text-destructive">
-              Bu manzil allaqachon ishlatilgan.
-            </p>
-          )}
 
           <Field
             label="Qisqa tavsif"
@@ -127,28 +76,20 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
           >
             <Input
               id="subtitle"
-              value={draft.subtitle}
+              name="subtitle"
+              value={subtitle}
               placeholder="Bir jumlada kurs nima haqida"
-              onChange={(e) => set("subtitle", e.target.value)}
+              onChange={(e) => setSubtitle(e.target.value)}
             />
           </Field>
 
           <Field label="To'liq tavsif" htmlFor="description">
-            <Textarea
-              id="description"
-              rows={4}
-              value={draft.description}
-              onChange={(e) => set("description", e.target.value)}
-            />
+            <Textarea id="description" name="description" rows={4} />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Kategoriya" htmlFor="category">
-              <Select
-                id="category"
-                value={draft.category}
-                onChange={(e) => set("category", e.target.value)}
-              >
+              <Select id="category" name="category" defaultValue={CATEGORIES[0]}>
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -160,10 +101,9 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
             <Field label="Daraja" htmlFor="difficulty">
               <Select
                 id="difficulty"
-                value={draft.difficulty}
-                onChange={(e) =>
-                  set("difficulty", e.target.value as Difficulty)
-                }
+                name="difficulty"
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
               >
                 {DIFFICULTIES.map((d) => (
                   <option key={d} value={d}>
@@ -176,30 +116,30 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
             <Field label="Davomiyligi (soat)" htmlFor="hours">
               <Input
                 id="hours"
+                name="duration_hours"
                 type="number"
                 min={1}
                 max={500}
-                value={draft.durationHours}
-                onChange={(e) =>
-                  set("durationHours", Number(e.target.value) || 1)
-                }
+                value={hours}
+                onChange={(e) => setHours(Number(e.target.value) || 1)}
               />
             </Field>
           </div>
 
           <Field label="Muqova rangi">
+            <input type="hidden" name="accent" value={accent} />
             <div className="flex flex-wrap gap-2">
-              {ACCENTS.map((accent) => (
+              {ACCENTS.map((option) => (
                 <button
-                  key={accent.value}
+                  key={option.value}
                   type="button"
-                  aria-label={accent.label}
-                  aria-pressed={draft.accent === accent.value}
-                  onClick={() => set("accent", accent.value)}
+                  aria-label={option.label}
+                  aria-pressed={accent === option.value}
+                  onClick={() => setAccent(option.value)}
                   className={cn(
                     "h-10 w-16 cursor-pointer rounded-md bg-gradient-to-br ring-offset-2 ring-offset-background transition-shadow",
-                    accent.value,
-                    draft.accent === accent.value && "ring-2 ring-ring",
+                    option.value,
+                    accent === option.value && "ring-2 ring-ring",
                   )}
                 />
               ))}
@@ -208,53 +148,52 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
 
           <Field
             label="Nimalarni o'rganadi"
+            htmlFor="objectives"
             hint="Har bir natija alohida qatorda."
           >
             <Textarea
+              id="objectives"
+              name="objectives"
               rows={4}
-              value={draft.objectives.join("\n")}
-              placeholder={"Semantik HTML yozish\nForma tuzish"}
-              onChange={(e) =>
-                set(
-                  "objectives",
-                  e.target.value.split("\n").filter((l) => l.trim() !== ""),
-                )
-              }
+              placeholder={"Oylik byudjet tuzish\nJamg'armani rejalashtirish"}
             />
           </Field>
 
-          <Field label="Talablar" hint="Har bir talab alohida qatorda.">
-            <Textarea
-              rows={3}
-              value={draft.prerequisites.join("\n")}
-              onChange={(e) =>
-                set(
-                  "prerequisites",
-                  e.target.value.split("\n").filter((l) => l.trim() !== ""),
-                )
-              }
-            />
+          <Field
+            label="Talablar"
+            htmlFor="prerequisites"
+            hint="Har bir talab alohida qatorda."
+          >
+            <Textarea id="prerequisites" name="prerequisites" rows={3} />
           </Field>
 
           <div className="flex flex-col gap-3">
             <div>
               <h2 className="text-sm font-medium">Modullar</h2>
               <p className="text-xs text-muted-foreground">
-                Darslar shu modullar ichiga joylashadi.
+                Darslar shu modullar ichiga joylashadi. Bo&apos;sh qoldirsangiz
+                darslar bevosita kursga qo&apos;shiladi.
               </p>
             </div>
 
-            {modules.map((title, index) => (
+            {/* The action reads modules as one newline-separated field. */}
+            <input
+              type="hidden"
+              name="modules"
+              value={modules.filter((m) => m.trim()).join("\n")}
+            />
+
+            {modules.map((moduleTitle, index) => (
               <div key={index} className="flex items-center gap-2">
                 <span className="w-6 shrink-0 text-sm text-muted-foreground">
                   {index + 1}.
                 </span>
                 <Input
-                  value={title}
+                  value={moduleTitle}
                   placeholder="Modul nomi"
+                  aria-label={`${index + 1}-modul nomi`}
                   onChange={(e) =>
-                    set(
-                      "moduleTitles",
+                    setModules(
                       modules.map((m, i) =>
                         i === index ? e.target.value : m,
                       ),
@@ -273,7 +212,7 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
                       next[index],
                       next[index - 1],
                     ];
-                    set("moduleTitles", next);
+                    setModules(next);
                   }}
                 >
                   ↑
@@ -286,10 +225,7 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
                   aria-label="Modulni o'chirish"
                   disabled={modules.length === 1}
                   onClick={() =>
-                    set(
-                      "moduleTitles",
-                      modules.filter((_, i) => i !== index),
-                    )
+                    setModules(modules.filter((_, i) => i !== index))
                   }
                 >
                   ✕
@@ -302,7 +238,7 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => set("moduleTitles", [...modules, ""])}
+                onClick={() => setModules([...modules, ""])}
               >
                 + Modul qo&apos;shish
               </Button>
@@ -317,120 +253,55 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
             </p>
             <Card className="overflow-hidden">
               <div
-                className={`flex h-24 items-end bg-gradient-to-br ${draft.accent} p-4`}
+                className={`flex h-24 items-end bg-gradient-to-br ${accent} p-4`}
               >
                 <span className="text-lg font-bold text-white drop-shadow-sm">
-                  {draft.title || "Kurs nomi"}
+                  {title || "Kurs nomi"}
                 </span>
               </div>
               <CardContent className="flex flex-col gap-3 p-4">
                 <p className="text-sm text-muted-foreground">
-                  {draft.subtitle || "Qisqa tavsif"}
+                  {subtitle || "Qisqa tavsif"}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline">{draft.difficulty}</Badge>
-                  <span>{modules.filter((m) => m.trim()).length} modul</span>
+                  <Badge variant="outline">{difficulty}</Badge>
+                  <span>
+                    {modules.filter((m) => m.trim()).length} modul
+                  </span>
                   <span aria-hidden>·</span>
-                  <span>{draft.durationHours} soat</span>
+                  <span>{hours} soat</span>
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {created && (
-            <Card>
-              <CardContent className="flex flex-col gap-3 p-4">
-                <p className="text-sm">
-                  Kurs qoralamasi saqlandi. Endi unga dars qo&apos;shishingiz
-                  mumkin.
-                </p>
-                <ButtonLink
-                  href={`/contributor/lessons/new?course=${draft.slug}`}
-                  size="sm"
-                >
-                  Dars qo&apos;shish
-                </ButtonLink>
-              </CardContent>
-            </Card>
-          )}
         </aside>
       </div>
 
-      <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
-        <Button type="button" variant="outline" onClick={handleSave}>
-          Qoralamani saqlash
-        </Button>
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={draft.status !== "DRAFT"}
-        >
-          Ko&apos;rib chiqishga yuborish
-        </Button>
-
-        {draft.status !== "DRAFT" ? (
-          <span className="text-sm text-muted-foreground">
-            Kurs ko&apos;rib chiqishga yuborildi.
-          </span>
-        ) : (
-          !canSubmit && (
-            <span className="text-sm text-muted-foreground">
-              Yuborish uchun {allIssues.length} ta talab bajarilishi kerak
-            </span>
-          )
-        )}
-      </div>
-
-      {showIssues && allIssues.length > 0 && (
+      {state.error && (
         <Card className="border-destructive">
-          <CardContent className="p-5">
-            <h2 className="mb-2 font-semibold">
-              Yuborishdan oldin to&apos;ldirilishi kerak
-            </h2>
-            <ul className="ml-5 flex list-disc flex-col gap-1 text-sm">
-              {allIssues.map((issue) => (
-                <li key={issue}>{issue}</li>
-              ))}
-            </ul>
+          <CardContent className="p-4 text-sm text-destructive">
+            {state.error}
           </CardContent>
         </Card>
       )}
 
-      {stored.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">
-            Sizning kurs qoralamalaringiz
-          </h2>
-          <Card>
-            <ul className="divide-y divide-border">
-              {stored.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      {c.title || "Nomsiz kurs"}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      /{c.slug} · {c.moduleTitles.length} modul
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline">{STATUS_LABELS[c.status]}</Badge>
-                    <Link
-                      href={`/contributor/lessons/new?course=${c.slug}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Dars qo&apos;shish
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </section>
-      )}
-    </div>
+      <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
+        <SubmitButton />
+        <span className="text-sm text-muted-foreground">
+          Kurs qoralama sifatida saqlanadi. Darslarni qo&apos;shib
+          bo&apos;lgach, ko&apos;rib chiqishga yuborasiz.
+        </span>
+      </div>
+    </form>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Saqlanmoqda…" : "Kursni yaratish"}
+    </Button>
   );
 }

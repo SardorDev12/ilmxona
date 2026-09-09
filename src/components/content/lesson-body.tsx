@@ -1,4 +1,4 @@
-import type { Block } from "@/content/types";
+import type { Block } from "@/lib/content/types";
 import { Playground } from "./playground";
 
 export function LessonBody({ blocks }: { blocks: Block[] }) {

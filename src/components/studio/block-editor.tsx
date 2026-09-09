@@ -1,7 +1,7 @@
 "use client";
 
-import type { Block } from "@/content/types";
-import { BLOCK_LABELS, newBlock } from "@/lib/studio/draft";
+import type { Block } from "@/lib/content/types";
+import { BLOCK_LABELS, newBlock } from "@/lib/content/editor";
 import { Input, Textarea, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -1,20 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { glossary, getGlossaryTerm } from "@/content/glossary";
-import { courses, courseLessons } from "@/content";
+import { getGlossaryTerm, lessonsForTerm } from "@/lib/content/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-export function generateStaticParams() {
-  return glossary.map((t) => ({ term: t.slug }));
-}
 
 export async function generateMetadata({
   params,
 }: PageProps<"/glossary/[term]">): Promise<Metadata> {
   const { term: slug } = await params;
-  const term = getGlossaryTerm(slug);
+  const term = await getGlossaryTerm(slug);
   if (!term) return {};
 
   return {
@@ -28,19 +23,14 @@ export default async function GlossaryTermPage({
   params,
 }: PageProps<"/glossary/[term]">) {
   const { term: slug } = await params;
-  const term = getGlossaryTerm(slug);
+  const term = await getGlossaryTerm(slug);
   if (!term) notFound();
 
-  const related = term.related
-    .map(getGlossaryTerm)
-    .filter((t) => t !== undefined);
-
-  // Lessons that list this term as related.
-  const lessons = courses.flatMap((course) =>
-    courseLessons(course)
-      .filter((lesson) => lesson.relatedTerms.includes(term.slug))
-      .map((lesson) => ({ course, lesson })),
-  );
+  const [relatedRaw, lessons] = await Promise.all([
+    Promise.all(term.related.map((s) => getGlossaryTerm(s))),
+    lessonsForTerm(term.slug),
+  ]);
+  const related = relatedRaw.filter((t) => t !== null);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
@@ -57,10 +47,12 @@ export default async function GlossaryTermPage({
       <header className="mb-6 flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">{term.term}</h1>
         <dl className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <div className="flex gap-2">
-            <dt className="font-medium">Inglizcha:</dt>
-            <dd>{term.en}</dd>
-          </div>
+          {term.en && (
+            <div className="flex gap-2">
+              <dt className="font-medium">Inglizcha:</dt>
+              <dd>{term.en}</dd>
+            </div>
+          )}
           {term.ru && (
             <div className="flex gap-2">
               <dt className="font-medium">Ruscha:</dt>
@@ -102,15 +94,15 @@ export default async function GlossaryTermPage({
         <section>
           <h2 className="mb-3 text-lg font-semibold">Tegishli darslar</h2>
           <ul className="flex flex-col gap-2">
-            {lessons.map(({ course, lesson }) => (
-              <li key={`${course.slug}-${lesson.slug}`}>
+            {lessons.map((lesson) => (
+              <li key={lesson.id}>
                 <Link
-                  href={`/courses/${course.slug}/lessons/${lesson.slug}`}
+                  href={`/courses/${lesson.courses.slug}/lessons/${lesson.slug}`}
                   className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm transition-colors hover:bg-muted"
                 >
                   <span className="font-medium">{lesson.title}</span>
                   <span className="text-xs text-muted-foreground">
-                    {course.title}
+                    {lesson.courses.title}
                   </span>
                 </Link>
               </li>

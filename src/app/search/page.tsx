@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { search } from "@/content";
+import { search } from "@/lib/content/queries";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ export default async function SearchPage({
   const params = await searchParams;
   const raw = params.q;
   const query = Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "");
-  const results = search(query);
+  const results = await search(query);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">

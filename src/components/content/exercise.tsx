@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Exercise } from "@/content/types";
+import type { Exercise } from "@/lib/content/types";
 import { Button } from "@/components/ui/button";
 
 export function ExerciseBlock({ exercise }: { exercise: Exercise }) {

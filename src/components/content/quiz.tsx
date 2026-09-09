@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { QuizQuestion } from "@/content/types";
+import type { QuizQuestion } from "@/lib/content/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

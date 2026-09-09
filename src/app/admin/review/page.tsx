@@ -1,27 +1,39 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { reviewQueue } from "@/lib/content/queries";
+import { ReviewQueue, type ReviewItem } from "@/components/studio/review-queue";
+import { EmptyState } from "@/components/content/cards";
 
 export const metadata: Metadata = {
   title: "Ko'rib chiqish",
   robots: { index: false },
 };
 
-/** Placeholder queue — submissions still live in the browser (see
- *  src/lib/studio/), so there is nothing server-side to list yet. */
-const PENDING = [
-  { kind: "Kurs", title: "Python asoslari", author: "aziz", at: "2026-09-08" },
-  {
-    kind: "Dars",
-    title: "TypeScript: turlar",
-    author: "malika",
-    at: "2026-09-07",
-  },
-];
-
 export default async function AdminReviewPage() {
   await requireRole("MODERATOR", "/admin/review");
+
+  const { courses, lessons } = await reviewQueue();
+
+  const items: ReviewItem[] = [
+    ...courses.map((course) => ({
+      id: course.id,
+      table: "courses" as const,
+      kind: "Kurs",
+      title: course.title,
+      href: `/courses/${course.slug}`,
+      author: course.profiles.username,
+      submittedAt: course.updated_at,
+    })),
+    ...lessons.map((lesson) => ({
+      id: lesson.id,
+      table: "lessons" as const,
+      kind: "Dars",
+      title: `${lesson.courses.title} — ${lesson.title}`,
+      href: `/courses/${lesson.courses.slug}/lessons/${lesson.slug}`,
+      author: lesson.profiles.username,
+      submittedAt: lesson.updated_at,
+    })),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,30 +45,14 @@ export default async function AdminReviewPage() {
         </p>
       </div>
 
-      <Card>
-        <ul className="divide-y divide-border">
-          {PENDING.map((item) => (
-            <li
-              key={item.title}
-              className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
-            >
-              <div>
-                <p className="text-sm font-medium">{item.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  @{item.author} · {item.at}
-                </p>
-              </div>
-              <Badge variant="outline">{item.kind}</Badge>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <p className="text-sm text-muted-foreground">
-        Demo ma&apos;lumot: yuborilgan kontent hozircha brauzerda saqlanadi,
-        shuning uchun bu ro&apos;yxat qat&apos;iy kiritilgan. Kontent
-        bazaga ko&apos;chirilgach haqiqiy navbat ko&apos;rinadi.
-      </p>
+      {items.length === 0 ? (
+        <EmptyState
+          title="Navbat bo'sh"
+          description="Ko'rib chiqishga yuborilgan material yo'q."
+        />
+      ) : (
+        <ReviewQueue items={items} />
+      )}
     </div>
   );
 }

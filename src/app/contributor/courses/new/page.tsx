@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireProfile } from "@/lib/auth/session";
-import { courses } from "@/content";
 import { CourseEditor } from "@/components/studio/course-editor";
 
 export const metadata: Metadata = {
@@ -33,7 +32,7 @@ export default async function NewCoursePage() {
         </p>
       </header>
 
-      <CourseEditor takenSlugs={courses.map((c) => c.slug)} />
+      <CourseEditor />
     </div>
   );
 }

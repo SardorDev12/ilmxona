@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { isDemoMode, requireRole } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { hasRole, ROLE_LABELS } from "@/lib/auth/roles";
-import { totals } from "@/content";
+import { platformTotals, reviewQueue } from "@/lib/content/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -13,9 +13,8 @@ export default async function AdminOverviewPage() {
   const profile = await requireRole("MODERATOR", "/admin");
   const isAdmin = hasRole(profile.role, "ADMIN");
 
-  // Counts come from the database; content figures are still hard-coded
-  // until courses move out of src/content. Without Supabase there is
-  // nothing to count, and querying anyway would take the page down.
+  // Without Supabase there is nothing to count, and querying anyway
+  // would take the page down.
   let userCount: number | null = null;
   let creatorCount: number | null = null;
 
@@ -31,6 +30,9 @@ export default async function AdminOverviewPage() {
     userCount = all.count ?? 0;
     creatorCount = creators.count ?? 0;
   }
+
+  const [totals, queue] = await Promise.all([platformTotals(), reviewQueue()]);
+  const pending = queue.courses.length + queue.lessons.length;
 
   const cards = [
     { label: "Foydalanuvchilar", value: userCount ?? "—" },
@@ -67,7 +69,11 @@ export default async function AdminOverviewPage() {
           <TaskCard
             href="/admin/review"
             title="Ko'rib chiqish"
-            description="Yuborilgan kurs va darslarni tasdiqlang yoki o'zgartirish so'rang."
+            description={
+              pending > 0
+                ? `${pending} ta material navbatda turibdi.`
+                : "Yuborilgan kurs va darslarni tasdiqlang yoki o'zgartirish so'rang."
+            }
           />
           <TaskCard
             href="/admin/reports"
