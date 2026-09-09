@@ -78,7 +78,17 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 5. Row Level Security.
+-- 5. Table privileges. Postgres checks these *before* RLS: without a
+--    grant the API roles are refused outright with "permission denied for
+--    table" (42501) and the policies below never run. See 003_grants.sql
+--    for the full explanation and the column-scoped update grant.
+grant usage on schema public to anon, authenticated;
+grant select on table public.profiles to anon, authenticated;
+grant update (username, display_name, avatar_url, bio)
+  on table public.profiles to authenticated;
+grant select on table public.audit_logs to authenticated;
+
+-- 6. Row Level Security.
 --    The app queries Postgres through PostgREST with the user's own JWT,
 --    so these policies are the actual authorization boundary — not just
 --    defence in depth.
