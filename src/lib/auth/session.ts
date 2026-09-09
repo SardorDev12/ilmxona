@@ -82,7 +82,7 @@ export async function requireProfile(nextPath?: string) {
     redirect(`/login${next}`);
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url, bio, role, created_at")
     .eq("id", user.id)
@@ -91,12 +91,22 @@ export async function requireProfile(nextPath?: string) {
   // Signed in, but no profiles row. Distinct from being signed out, and
   // redirecting to /login for it sends the user round a silent loop: they
   // authenticate, come back, and get bounced again with no explanation.
-  // Happens when the account predates the handle_new_user trigger.
+  //
+  // The row can be missing for two very different reasons, so report
+  // which: it genuinely does not exist (the account predates the
+  // handle_new_user trigger), or RLS is hiding it — an enabled policy set
+  // with no matching SELECT policy returns zero rows rather than an
+  // error, which looks identical from here without the database's own
+  // message.
   if (!profile) {
+    const detail = error
+      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
+      : "qator topilmadi";
+
+    console.error("profile lookup failed", { userId: user.id, error });
+
     redirect(
-      `/login?error=${encodeURIComponent(
-        "Profil topilmadi. Administrator bilan bog'laning.",
-      )}`,
+      `/login?error=${encodeURIComponent(`Profil topilmadi: ${detail}`)}`,
     );
   }
 
