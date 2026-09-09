@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "./logo";
 
 const FOOTER_LINKS = [
   {
@@ -24,7 +25,7 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-3">
         <div>
-          <span className="font-semibold">Ilmxona</span>
+          <Logo size={28} />
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">
             O&apos;zbek tilida bepul bilim o&apos;rganing.
           </p>

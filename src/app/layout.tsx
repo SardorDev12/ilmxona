@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Required for the generated icon/opengraph-image files to resolve to
+  // absolute URLs, which social scrapers need.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://ilmxona.uz",
+  ),
   title: {
     default: "Ilmxona — O'zbek tilida bepul bilim o'rganing",
     template: "%s — Ilmxona",

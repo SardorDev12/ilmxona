@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ilmxona">
+  <defs>
+    <linearGradient id="ilmxona-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2C7BF7"/>
+      <stop offset="0.55" stop-color="#1355EC"/>
+      <stop offset="1" stop-color="#0A2FC0"/>
+    </linearGradient>
+
+    <linearGradient id="ilmxona-cover" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5BB8FA"/>
+      <stop offset="1" stop-color="#2E93EC"/>
+    </linearGradient>
+
+    <linearGradient id="ilmxona-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DCE6F5"/>
+    </linearGradient>
+
+    <linearGradient id="ilmxona-cap-top" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#4BEDA2"/>
+      <stop offset="1" stop-color="#1FC77E"/>
+    </linearGradient>
+
+    <linearGradient id="ilmxona-cap-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#23C684"/>
+      <stop offset="1" stop-color="#129B62"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#ilmxona-bg)"/>
+
+  <!-- Book cover, visible around and beneath the pages -->
+  <path fill="url(#ilmxona-cover)" d="
+    M 62 268
+    a 22 22 0 0 1 26 -21
+    l 24 5
+    v 122
+    l -34 -7
+    a 22 22 0 0 1 -16 -21
+    Z
+    M 450 268
+    a 22 22 0 0 0 -26 -21
+    l -24 5
+    v 122
+    l 34 -7
+    a 22 22 0 0 0 16 -21
+    Z"/>
+  <path fill="url(#ilmxona-cover)" d="
+    M 62 352
+    c 60 12 132 30 194 62
+    c 62 -32 134 -50 194 -62
+    v 26
+    a 22 22 0 0 1 -16 21
+    c -56 12 -122 29 -178 57
+    a 12 12 0 0 1 -10 0
+    c -56 -28 -122 -45 -178 -57
+    a 22 22 0 0 1 -16 -21
+    Z"/>
+
+  <!-- Open book: two pages meeting at the spine -->
+  <path fill="url(#ilmxona-page)" d="
+    M 246 216
+    c -42 -22 -96 -32 -140 -26
+    a 14 14 0 0 0 -12 14
+    v 130
+    a 14 14 0 0 0 16 14
+    c 46 6 100 24 136 50
+    Z"/>
+  <path fill="url(#ilmxona-page)" d="
+    M 266 216
+    c 42 -22 96 -32 140 -26
+    a 14 14 0 0 1 12 14
+    v 130
+    a 14 14 0 0 1 -16 14
+    c -46 6 -100 24 -136 50
+    Z"/>
+
+  <!-- Spine -->
+  <path fill="#0B37CC" d="M 248 214 h 16 v 172 h -16 Z"/>
+
+  <!-- Mortarboard: body under the plate -->
+  <path fill="url(#ilmxona-cap-body)" d="
+    M 176 150
+    h 160
+    v 78
+    a 40 40 0 0 1 -22 36
+    l -50 25
+    a 18 18 0 0 1 -16 0
+    l -50 -25
+    a 40 40 0 0 1 -22 -36
+    Z"/>
+
+  <!-- Mortarboard: top plate -->
+  <path fill="url(#ilmxona-cap-top)" d="
+    M 244 79
+    a 24 24 0 0 1 24 0
+    l 155 63
+    a 12 12 0 0 1 0 22
+    l -155 63
+    a 24 24 0 0 1 -24 0
+    l -155 -63
+    a 12 12 0 0 1 0 -22
+    Z"/>
+
+  <!-- Tassel -->
+  <path fill="none" stroke="#3FE49B" stroke-width="10" stroke-linecap="round" d="
+    M 404 158
+    v 62"/>
+  <path fill="#5BF0AC" d="
+    M 404 214
+    a 18 18 0 0 1 18 18
+    v 14
+    a 18 18 0 0 1 -36 0
+    v -14
+    a 18 18 0 0 1 18 -18
+    Z"/>
+</svg>

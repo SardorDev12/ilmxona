@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { ButtonLink } from "@/components/ui/button";
 import { Avatar } from "@/components/content/cards";
+import { Logo } from "./logo";
 
 const NAV_LINKS = [
   { href: "/courses", label: "Kurslar" },
@@ -16,14 +17,8 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link
-          href="/"
-          className="flex shrink-0 items-center gap-2 font-semibold"
-        >
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            I
-          </span>
-          <span>Ilmxona</span>
+        <Link href="/" className="shrink-0" aria-label="Ilmxona bosh sahifasi">
+          <Logo size={32} />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
