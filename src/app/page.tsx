@@ -167,15 +167,16 @@ export default function HomePage() {
               Bilimingiz bilan bo&apos;lishing
             </h2>
             <p className="max-w-lg opacity-90">
-              O&apos;zbek tilida sifatli o&apos;quv materiali yozishga
-              qiziqasizmi? Muallif bo&apos;lish uchun ariza qoldiring.
+              Kurs yoki dars yozing va ko&apos;rib chiqishga yuboring.
+              Ariza kutish shart emas — hisobingiz bo&apos;lsa, bugunoq
+              boshlashingiz mumkin.
             </p>
             <ButtonLink
-              href="/contributor/apply"
+              href="/contributor/courses/new"
               variant="secondary"
               className="bg-white text-primary hover:bg-white/90"
             >
-              Muallif bo&apos;lish
+              Kurs yaratish
             </ButtonLink>
           </CardContent>
         </Card>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { requireRole } from "@/lib/auth/session";
+import { requireProfile } from "@/lib/auth/session";
 import { courses } from "@/content";
 import { LessonEditor } from "@/components/studio/lesson-editor";
 
@@ -12,9 +12,10 @@ export const metadata: Metadata = {
 export default async function NewLessonPage({
   searchParams,
 }: PageProps<"/contributor/lessons/new">) {
-  // Contributors and above may draft; publishing stays with reviewers
-  // (docs/PRD.md §22, §28).
-  const profile = await requireRole("CONTRIBUTOR", "/contributor/lessons/new");
+  // Any signed-in user may draft and submit. Publishing stays with
+  // moderators — review is what filters quality, not a role gate on who
+  // is allowed to write.
+  const profile = await requireProfile("/contributor/lessons/new");
 
   const { course } = await searchParams;
   const initialCourseSlug = Array.isArray(course) ? course[0] : (course ?? "");

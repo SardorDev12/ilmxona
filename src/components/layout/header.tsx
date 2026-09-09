@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { ButtonLink } from "@/components/ui/button";
-import { Avatar } from "@/components/content/cards";
 import { Logo } from "./logo";
+import { UserMenu } from "./user-menu";
 
 const NAV_LINKS = [
   { href: "/courses", label: "Kurslar" },
@@ -38,18 +38,11 @@ export async function SiteHeader() {
             Qidirish
           </ButtonLink>
           {profile ? (
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              <Avatar
-                name={profile.display_name ?? profile.username}
-                size={28}
-              />
-              <span className="hidden sm:inline">
-                {profile.display_name ?? profile.username}
-              </span>
-            </Link>
+            <UserMenu
+              name={profile.display_name ?? profile.username}
+              username={profile.username}
+              role={profile.role}
+            />
           ) : (
             <>
               <ButtonLink href="/login" variant="ghost" size="sm">

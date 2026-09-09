@@ -71,7 +71,7 @@ export function Quiz({ questions }: { questions: QuizQuestion[] }) {
                     disabled={submitted}
                     aria-pressed={isChosen}
                     className={cn(
-                      "flex items-center gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
+                      "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors disabled:cursor-default",
                       !submitted && "hover:border-primary/60 hover:bg-muted",
                       isChosen && !submitted
                         ? "border-primary bg-primary/5"

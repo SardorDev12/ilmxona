@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth/session";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { SettingsSection } from "@/components/settings/form-shell";
 import { Badge } from "@/components/ui/badge";
+import { ROLE_LABELS } from "@/lib/auth/roles";
 
 export const metadata: Metadata = {
   title: "Profil sozlamalari",
@@ -27,7 +28,7 @@ export default async function ProfileSettingsPage() {
           <div className="flex items-center justify-between gap-4">
             <dt className="text-muted-foreground">Rol</dt>
             <dd>
-              <Badge variant="primary">{profile.role}</Badge>
+              <Badge variant="primary">{ROLE_LABELS[profile.role]}</Badge>
             </dd>
           </div>
           <div className="flex items-center justify-between gap-4">

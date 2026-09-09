@@ -23,11 +23,14 @@ const SIZE_CLASSES = {
 type Variant = keyof typeof VARIANT_CLASSES;
 type Size = keyof typeof SIZE_CLASSES;
 
+// Tailwind v4's preflight no longer gives <button> a pointer cursor, so
+// interactive elements set it explicitly. Disabled buttons keep pointer
+// events so the not-allowed cursor is actually visible on hover.
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium " +
-  "transition-colors focus-visible:outline-none focus-visible:ring-2 " +
-  "focus-visible:ring-ring focus-visible:ring-offset-2 " +
-  "disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md " +
+  "font-medium transition-colors focus-visible:outline-none " +
+  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 " +
+  "disabled:cursor-not-allowed disabled:opacity-50";
 
 type ButtonProps = ComponentProps<"button"> & {
   variant?: Variant;

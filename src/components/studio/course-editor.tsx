@@ -197,7 +197,7 @@ export function CourseEditor({ takenSlugs }: { takenSlugs: string[] }) {
                   aria-pressed={draft.accent === accent.value}
                   onClick={() => set("accent", accent.value)}
                   className={cn(
-                    "h-10 w-16 rounded-md bg-gradient-to-br ring-offset-2 ring-offset-background transition-shadow",
+                    "h-10 w-16 cursor-pointer rounded-md bg-gradient-to-br ring-offset-2 ring-offset-background transition-shadow",
                     accent.value,
                     draft.accent === accent.value && "ring-2 ring-ring",
                   )}

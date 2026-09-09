@@ -68,11 +68,13 @@ export default function ContributorsPage() {
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <h2 className="text-xl font-semibold">Siz ham yozishingiz mumkin</h2>
           <p className="max-w-lg text-sm text-muted-foreground">
-            Bilim ulashishga tayyor bo&apos;lsangiz, ariza qoldiring.
-            Arizangizni ko&apos;rib chiqamiz va sizga qanday boshlashni
-            tushuntiramiz.
+            Har bir foydalanuvchi kurs va dars yarata oladi. Yozganingiz
+            moderator ko&apos;rigidan o&apos;tgach nashr etiladi va siz
+            muallif sifatida shu ro&apos;yxatga qo&apos;shilasiz.
           </p>
-          <ButtonLink href="/contributor/apply">Ariza qoldirish</ButtonLink>
+          <ButtonLink href="/contributor/courses/new">
+            Kurs yaratish
+          </ButtonLink>
         </CardContent>
       </Card>
     </div>

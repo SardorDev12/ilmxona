@@ -49,7 +49,7 @@ export function Playground({ html = "", css = "", js = "" }: Props) {
               type="button"
               onClick={() => setTab(t)}
               className={
-                "rounded px-2.5 py-1 text-xs font-medium uppercase transition-colors " +
+                "cursor-pointer rounded px-2.5 py-1 text-xs font-medium uppercase transition-colors " +
                 (tab === t
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground")

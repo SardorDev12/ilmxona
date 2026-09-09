@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { requireRole } from "@/lib/auth/session";
+import { requireProfile } from "@/lib/auth/session";
 import { courses } from "@/content";
 import { CourseEditor } from "@/components/studio/course-editor";
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewCoursePage() {
-  await requireRole("CONTRIBUTOR", "/contributor/courses/new");
+  await requireProfile("/contributor/courses/new");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">

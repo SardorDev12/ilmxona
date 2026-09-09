@@ -131,7 +131,7 @@ export function LessonEditor({
           Saqlangan qoralama tiklandi.{" "}
           <button
             type="button"
-            className="font-medium text-primary hover:underline"
+            className="cursor-pointer font-medium text-primary hover:underline"
             onClick={() => {
               clearDraft();
               setEdited(EMPTY_DRAFT);
@@ -150,7 +150,7 @@ export function LessonEditor({
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
-                "whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "cursor-pointer whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 tab === t.id
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground",

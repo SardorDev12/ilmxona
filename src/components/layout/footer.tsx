@@ -15,7 +15,7 @@ const FOOTER_LINKS = [
     heading: "Jamiyat",
     links: [
       { href: "/contributors", label: "Mualliflar" },
-      { href: "/contributor/apply", label: "Muallif bo'lish" },
+      { href: "/contributor/courses/new", label: "Kurs yaratish" },
     ],
   },
 ];

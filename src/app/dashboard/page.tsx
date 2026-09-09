@@ -1,13 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireProfile } from "@/lib/auth/session";
-import { hasRole } from "@/lib/auth/roles";
+import { ROLE_LABELS } from "@/lib/auth/roles";
 import { courses, getCourse, courseLessons, lessonCount } from "@/content";
 import { getLearningPath } from "@/content/paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { signOut } from "../(auth)/actions";
+import { ButtonLink } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Boshqaruv paneli" };
 
@@ -58,35 +57,25 @@ export default async function DashboardPage() {
             Xush kelibsiz, {profile.display_name ?? profile.username}
           </h1>
           <div className="mt-2 flex items-center gap-2">
-            <Badge variant="primary">{profile.role}</Badge>
+            <Badge variant="primary">{ROLE_LABELS[profile.role]}</Badge>
             <span className="text-sm text-muted-foreground">
               @{profile.username}
             </span>
           </div>
         </div>
+        {/* Creating is open to every signed-in user; sign-out and
+            settings now live in the header profile menu. */}
         <div className="flex items-center gap-2">
-          <ButtonLink href="/settings" size="sm" variant="ghost">
-            Sozlamalar
+          <ButtonLink
+            href="/contributor/courses/new"
+            size="sm"
+            variant="outline"
+          >
+            Yangi kurs
           </ButtonLink>
-          {hasRole(profile.role, "CONTRIBUTOR") && (
-            <>
-              <ButtonLink
-                href="/contributor/courses/new"
-                size="sm"
-                variant="outline"
-              >
-                Yangi kurs
-              </ButtonLink>
-              <ButtonLink href="/contributor/lessons/new" size="sm">
-                Yangi dars
-              </ButtonLink>
-            </>
-          )}
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
-              Chiqish
-            </Button>
-          </form>
+          <ButtonLink href="/contributor/lessons/new" size="sm">
+            Yangi dars
+          </ButtonLink>
         </div>
       </header>
 
