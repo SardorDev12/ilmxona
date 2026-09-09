@@ -65,6 +65,9 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ButtonLink href="/settings" size="sm" variant="ghost">
+            Sozlamalar
+          </ButtonLink>
           {hasRole(profile.role, "CONTRIBUTOR") && (
             <>
               <ButtonLink
