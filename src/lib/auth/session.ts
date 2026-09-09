@@ -70,11 +70,36 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 
 /** Redirects to /login if signed out; otherwise returns the profile. */
 export async function requireProfile(nextPath?: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) {
+  if (isDemoMode()) return DEMO_PROFILE;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     const next = nextPath ? `?next=${encodeURIComponent(nextPath)}` : "";
     redirect(`/login${next}`);
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, bio, role, created_at")
+    .eq("id", user.id)
+    .single<Profile>();
+
+  // Signed in, but no profiles row. Distinct from being signed out, and
+  // redirecting to /login for it sends the user round a silent loop: they
+  // authenticate, come back, and get bounced again with no explanation.
+  // Happens when the account predates the handle_new_user trigger.
+  if (!profile) {
+    redirect(
+      `/login?error=${encodeURIComponent(
+        "Profil topilmadi. Administrator bilan bog'laning.",
+      )}`,
+    );
+  }
+
   return profile;
 }
 
