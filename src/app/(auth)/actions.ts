@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import { requestOrigin } from "@/lib/site-url";
 
 const DEMO_NOTICE =
   "Hozircha demo rejim: autentifikatsiya backend'i ulanmagan.";
@@ -47,7 +48,7 @@ export async function signUpWithPassword(formData: FormData) {
     password,
     options: {
       data: { username },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      emailRedirectTo: `${await requestOrigin()}/auth/callback`,
     },
   });
 
@@ -68,7 +69,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: `${await requestOrigin()}/auth/callback`,
     },
   });
 
