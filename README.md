@@ -19,21 +19,28 @@ When `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` are absent, th
 
 ## Authoring flow
 
+**The unit of review is the course, not the lesson.** A lesson is never submitted or approved on its own: adding one is an update *to its course*, and that is what puts the course in the moderator's queue.
+
 | Step | Who | Where |
 | --- | --- | --- |
 | Write a course (title, modules, objectives) | any signed-in user | `/contributor/courses/new` |
 | Write a lesson (blocks, exercise, quiz) | any signed-in user | `/contributor/lessons/new` |
-| Submit for review | the author | `/dashboard` |
-| Publish or request changes | MODERATOR, ADMIN | `/admin/review` |
+| Send the course, its lessons included, to review | the author | `/dashboard` |
+| Read the course and each new lesson, then publish or return | MODERATOR, ADMIN | `/admin/review/<course>` |
+| Delete a course, and every lesson under it | ADMIN | `/admin/review/<course>` |
+
+A course reaches the queue two ways: it is itself `SUBMITTED` (new, never published), or it is live and carries `SUBMITTED` lessons (an update). The queue badge in the admin sidebar is the notification. Approving a submitted course publishes every lesson waiting inside it; a moderator can also approve or return one lesson at a time from the same page. Returning work on a **live** course marks only the pending lessons `CHANGES_REQUESTED` — sending the course itself back would pull an already-published course off the site over one new lesson.
 
 Publishing is reachable only through the moderator policies in `006_content.sql` — an author's own `update` policy refuses any status but `DRAFT` or `SUBMITTED`, so the review step cannot be skipped from the client. Publishing someone's first piece of content promotes them from `USER` to `CREATOR`.
+
+Deleting a course cascades to its modules and lessons. RLS allows it for a moderator on any course and for an author only while their own course is still a draft; the UI additionally asks an admin to type the course title back.
 
 ## Connecting the backend
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
 3. Enable the **Google** provider under Supabase Auth → Providers (Telegram is not a native Supabase provider — see "Known gaps").
-4. Apply the schema: open the Supabase SQL editor and run every file in [`supabase/sql/`](supabase/sql) **in filename order** (`001` … `006`). Together they create the `role` and `content_status` enums, the `profiles` / `audit_logs` / content tables, the trigger that auto-creates a profile for every new auth user, and the grants and RLS policies. Grants matter as much as policies: Postgres checks table privileges *before* RLS, so a table with policies but no `grant` returns `permission denied` (42501).
+4. Apply the schema: open the Supabase SQL editor and run every file in [`supabase/sql/`](supabase/sql) **in filename order** (`001` … `007`). Together they create the `role` and `content_status` enums, the `profiles` / `audit_logs` / content tables, the trigger that auto-creates a profile for every new auth user, and the grants and RLS policies. Grants matter as much as policies: Postgres checks table privileges *before* RLS, so a table with policies but no `grant` returns `permission denied` (42501).
 
 ## Data access
 

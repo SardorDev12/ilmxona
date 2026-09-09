@@ -466,15 +466,29 @@ export function LessonEditor({
       )}
 
       <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
-        <SubmitButton disabled={issues.length > 0} />
+        {/* Sending the lesson is what notifies the moderator: it puts the
+            course it belongs to into their review queue. */}
+        <ActionButton
+          name="submit"
+          value="1"
+          disabled={issues.length > 0}
+          label="Saqlash va ko'rib chiqishga yuborish"
+        />
+        <ActionButton
+          name="submit"
+          value="0"
+          variant="outline"
+          disabled={issues.length > 0}
+          label="Qoralama sifatida saqlash"
+        />
+
         {issues.length > 0 ? (
           <span className="text-sm text-muted-foreground">
             {issues[0]} ({issues.length} ta talab qoldi)
           </span>
         ) : (
           <span className="text-sm text-muted-foreground">
-            Dars qoralama sifatida saqlanadi — keyin ko&apos;rib chiqishga
-            yuborasiz.
+            Yuborilgan dars tegishli kurs bilan birga ko&apos;rib chiqiladi.
           </span>
         )}
       </div>
@@ -482,12 +496,30 @@ export function LessonEditor({
   );
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function ActionButton({
+  name,
+  value,
+  label,
+  disabled,
+  variant,
+}: {
+  name: string;
+  value: string;
+  label: string;
+  disabled: boolean;
+  variant?: "outline";
+}) {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" disabled={disabled || pending}>
-      {pending ? "Saqlanmoqda…" : "Darsni saqlash"}
+    <Button
+      type="submit"
+      name={name}
+      value={value}
+      variant={variant}
+      disabled={disabled || pending}
+    >
+      {pending ? "Saqlanmoqda…" : label}
     </Button>
   );
 }

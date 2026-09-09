@@ -391,34 +391,140 @@ export async function myContent(userId: string) {
   return { courses: courses.data ?? [], lessons: lessons.data ?? [] };
 }
 
-/** Everything awaiting moderator attention. */
-export async function reviewQueue() {
-  if (!isSupabaseConfigured()) return { courses: [], lessons: [] };
+/**
+ * The moderator queue, one row per course. A lesson is never queued on
+ * its own — it is an update to its course, so a course appears here when
+ * it is itself submitted or when it carries submitted lessons.
+ */
+export type QueueEntry = {
+  course: Course;
+  author: { username: string } | null;
+  pendingLessons: number;
+  /** A course awaiting its first publication, vs. updates to a live one. */
+  isNew: boolean;
+  /** Newest submission in the entry, for ordering the queue. */
+  updatedAt: string;
+};
+
+export async function reviewQueue(): Promise<QueueEntry[]> {
+  if (!isSupabaseConfigured()) return [];
 
   const supabase = await createClient();
-  const [courses, lessons] = await Promise.all([
+
+  const [submittedCourses, submittedLessons] = await Promise.all([
     supabase
       .from("courses")
       .select(`${COURSE_COLUMNS}, profiles!courses_author_id_fkey(username)`)
       .eq("status", "SUBMITTED")
-      .order("updated_at", { ascending: true })
-      .returns<(Course & { profiles: { username: string } })[]>(),
+      .returns<(Course & { profiles: { username: string } | null })[]>(),
     supabase
       .from("lessons")
-      .select(
-        `${LESSON_COLUMNS}, courses!inner(slug, title), profiles!lessons_author_id_fkey(username)`,
-      )
+      .select("course_id, updated_at")
       .eq("status", "SUBMITTED")
-      .order("updated_at", { ascending: true })
-      .returns<
-        (Lesson & {
-          courses: { slug: string; title: string };
-          profiles: { username: string };
-        })[]
-      >(),
+      .returns<{ course_id: string; updated_at: string }[]>(),
   ]);
 
-  return { courses: courses.data ?? [], lessons: lessons.data ?? [] };
+  const entries = new Map<string, QueueEntry>();
+
+  for (const course of submittedCourses.data ?? []) {
+    entries.set(course.id, {
+      course,
+      author: course.profiles,
+      pendingLessons: 0,
+      isNew: true,
+      updatedAt: course.updated_at,
+    });
+  }
+
+  // Courses with pending lessons that are not themselves submitted have
+  // to be fetched too — they are live courses receiving an update.
+  const lessonRows = submittedLessons.data ?? [];
+  const missing = [
+    ...new Set(lessonRows.map((l) => l.course_id)),
+  ].filter((id) => !entries.has(id));
+
+  if (missing.length > 0) {
+    const { data } = await supabase
+      .from("courses")
+      .select(`${COURSE_COLUMNS}, profiles!courses_author_id_fkey(username)`)
+      .in("id", missing)
+      .returns<(Course & { profiles: { username: string } | null })[]>();
+
+    for (const course of data ?? []) {
+      entries.set(course.id, {
+        course,
+        author: course.profiles,
+        pendingLessons: 0,
+        isNew: course.status !== "PUBLISHED",
+        updatedAt: course.updated_at,
+      });
+    }
+  }
+
+  for (const row of lessonRows) {
+    const entry = entries.get(row.course_id);
+    if (!entry) continue;
+    entry.pendingLessons += 1;
+    if (row.updated_at > entry.updatedAt) entry.updatedAt = row.updated_at;
+  }
+
+  // Oldest first: whoever has been waiting longest gets looked at first.
+  return [...entries.values()].sort((a, b) =>
+    a.updatedAt.localeCompare(b.updatedAt),
+  );
+}
+
+/**
+ * Every course a moderator can see, for the admin listing. A published
+ * course with nothing pending never reaches the review queue, so this is
+ * how a moderator gets to it — to re-read it, or to delete it.
+ */
+export async function allCourses() {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("courses")
+    .select(
+      `${COURSE_COLUMNS}, profiles!courses_author_id_fkey(username), lessons(count)`,
+    )
+    .order("updated_at", { ascending: false })
+    .returns<
+      (Course & {
+        profiles: { username: string } | null;
+        lessons: { count: number }[];
+      })[]
+    >();
+
+  return (data ?? []).map((course) => ({
+    ...course,
+    lessonCount: course.lessons[0]?.count ?? 0,
+  }));
+}
+
+/** How many courses are waiting — shown as a badge in the admin nav. */
+export async function reviewQueueCount(): Promise<number> {
+  return (await reviewQueue()).length;
+}
+
+/** A course and everything a moderator needs to judge it in one place. */
+export async function getCourseForReview(slug: string) {
+  const course = await getCourseBySlug(slug);
+  if (!course) return null;
+
+  const [modules, lessons, author] = await Promise.all([
+    courseModules(course.id),
+    courseLessons(course.id, false),
+    getAuthor(course.author_id),
+  ]);
+
+  return {
+    course,
+    author,
+    modules,
+    lessons,
+    pending: lessons.filter((l) => l.status === "SUBMITTED"),
+  };
 }
 
 export type SearchResult = {

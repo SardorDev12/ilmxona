@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/session";
 import { hasRole, ROLE_LABELS } from "@/lib/auth/roles";
+import { reviewQueueCount } from "@/lib/content/queries";
 import { Badge } from "@/components/ui/badge";
 
 export default async function AdminLayout({
@@ -11,7 +12,14 @@ export default async function AdminLayout({
   const profile = await requireRole("MODERATOR", "/admin");
   const isAdmin = hasRole(profile.role, "ADMIN");
 
-  const sections = [
+  // The badge is the notification: a course an author has just added a
+  // lesson to shows up here without anyone being emailed.
+  const pending = await reviewQueueCount();
+
+  const sections: {
+    heading: string;
+    links: { href: string; label: string; count?: number }[];
+  }[] = [
     {
       heading: "Umumiy",
       links: [{ href: "/admin", label: "Boshqaruv paneli" }],
@@ -19,7 +27,8 @@ export default async function AdminLayout({
     {
       heading: "Moderatsiya",
       links: [
-        { href: "/admin/review", label: "Ko'rib chiqish" },
+        { href: "/admin/review", label: "Ko'rib chiqish", count: pending },
+        { href: "/admin/courses", label: "Kurslar" },
         { href: "/admin/reports", label: "Shikoyatlar" },
       ],
     },
@@ -58,9 +67,12 @@ export default async function AdminLayout({
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="block rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
+                      className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
                     >
                       {link.label}
+                      {link.count ? (
+                        <Badge variant="primary">{link.count}</Badge>
+                      ) : null}
                     </Link>
                   </li>
                 ))}

@@ -32,7 +32,7 @@ export default async function AdminOverviewPage() {
   }
 
   const [totals, queue] = await Promise.all([platformTotals(), reviewQueue()]);
-  const pending = queue.courses.length + queue.lessons.length;
+  const pending = queue.length;
 
   const cards = [
     { label: "Foydalanuvchilar", value: userCount ?? "—" },
@@ -71,9 +71,14 @@ export default async function AdminOverviewPage() {
             title="Ko'rib chiqish"
             description={
               pending > 0
-                ? `${pending} ta material navbatda turibdi.`
+                ? `${pending} ta kurs navbatda turibdi.`
                 : "Yuborilgan kurs va darslarni tasdiqlang yoki o'zgartirish so'rang."
             }
+          />
+          <TaskCard
+            href="/admin/courses"
+            title="Kurslar"
+            description="Barcha kurslar ro'yxati — ochib ko'rish va o'chirish."
           />
           <TaskCard
             href="/admin/reports"

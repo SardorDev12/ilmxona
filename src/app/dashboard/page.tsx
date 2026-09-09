@@ -1,8 +1,13 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { requireProfile } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { myContent } from "@/lib/content/queries";
-import { ContentList, type ContentRow } from "@/components/studio/content-list";
+import { STATUS_LABELS } from "@/lib/content/types";
+import {
+  ContentList,
+  type CourseGroup,
+} from "@/components/studio/content-list";
 import { EmptyState } from "@/components/content/cards";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,32 +19,40 @@ export default async function DashboardPage() {
   const profile = await requireProfile("/dashboard");
   const { courses, lessons } = await myContent(profile.id);
 
-  const rows: ContentRow[] = [
-    ...courses.map((course) => ({
-      id: course.id,
-      title: course.title,
-      href: `/courses/${course.slug}`,
-      meta: `Kurs · /${course.slug}`,
-      status: course.status,
-      reviewNote: course.review_note,
-      table: "courses" as const,
-    })),
-    ...lessons.map((lesson) => ({
-      id: lesson.id,
-      title: lesson.title,
-      href: `/courses/${lesson.courses.slug}/lessons/${lesson.slug}`,
-      meta: `Dars · ${lesson.courses.title}`,
-      status: lesson.status,
-      reviewNote: lesson.review_note,
-      table: "lessons" as const,
-    })),
-  ];
+  // Lessons hang off their course: review happens per course, so the
+  // dashboard groups them the same way.
+  const groups: CourseGroup[] = courses.map((course) => ({
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    status: course.status,
+    reviewNote: course.review_note,
+    lessons: lessons
+      .filter((lesson) => lesson.course_id === course.id)
+      .map((lesson) => ({
+        id: lesson.id,
+        slug: lesson.slug,
+        title: lesson.title,
+        status: lesson.status,
+        reviewNote: lesson.review_note,
+      })),
+  }));
 
-  const published = rows.filter((r) => r.status === "PUBLISHED").length;
-  const inReview = rows.filter((r) => r.status === "SUBMITTED").length;
-  const needsWork = rows.filter(
-    (r) => r.status === "CHANGES_REQUESTED",
-  ).length;
+  // A lesson written for someone else's course still belongs to its
+  // author, and would otherwise be invisible here.
+  const foreign = lessons.filter(
+    (lesson) => !courses.some((c) => c.id === lesson.course_id),
+  );
+
+  const published =
+    courses.filter((c) => c.status === "PUBLISHED").length +
+    lessons.filter((l) => l.status === "PUBLISHED").length;
+  const inReview =
+    courses.filter((c) => c.status === "SUBMITTED").length +
+    lessons.filter((l) => l.status === "SUBMITTED").length;
+  const needsWork =
+    courses.filter((c) => c.status === "CHANGES_REQUESTED").length +
+    lessons.filter((l) => l.status === "CHANGES_REQUESTED").length;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -88,7 +101,7 @@ export default async function DashboardPage() {
       <section>
         <h2 className="mb-4 text-xl font-semibold">Mening materiallarim</h2>
 
-        {rows.length === 0 ? (
+        {groups.length === 0 ? (
           <EmptyState
             title="Hozircha materialingiz yo'q"
             description="Kurs yarating, unga dars qo'shing va ko'rib chiqishga yuboring. Tasdiqlangach materialingiz saytda paydo bo'ladi."
@@ -99,7 +112,39 @@ export default async function DashboardPage() {
             }
           />
         ) : (
-          <ContentList rows={rows} />
+          <ContentList courses={groups} />
+        )}
+
+        {foreign.length > 0 && (
+          <div className="mt-6">
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Boshqa kurslarga yozgan darslaringiz
+            </h3>
+            <Card>
+              <ul className="divide-y divide-border">
+                {foreign.map((lesson) => (
+                  <li
+                    key={lesson.id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+                  >
+                    <Link
+                      href={`/courses/${lesson.courses.slug}/lessons/${lesson.slug}`}
+                      className="text-sm hover:text-primary"
+                    >
+                      {lesson.courses.title} — {lesson.title}
+                    </Link>
+                    <Badge
+                      variant={
+                        lesson.status === "PUBLISHED" ? "primary" : "outline"
+                      }
+                    >
+                      {STATUS_LABELS[lesson.status]}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </div>
         )}
       </section>
     </div>
