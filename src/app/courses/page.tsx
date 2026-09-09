@@ -5,7 +5,7 @@ import { CourseCard } from "@/components/content/cards";
 export const metadata: Metadata = {
   title: "Kurslar",
   description:
-    "Ilmxonadagi barcha kurslar — HTML, CSS, JavaScript, Git va SQL bo'yicha o'zbek tilidagi bepul darslar.",
+    "Ilmxonadagi barcha kurslar — turli sohalar bo'yicha o'zbek tilidagi bepul darslar, mashqlar va testlar.",
 };
 
 export default function CoursesPage() {

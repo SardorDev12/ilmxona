@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s — Ilmxona",
   },
   description:
-    "Ilmxona — dasturlash va boshqa amaliy fanlarni o'zbek tilida bepul o'rganing: darslar, misollar, mashqlar va testlar bilan.",
+    "Ilmxona — o'zbek tilidagi ochiq bilim platformasi. Amaliy va akademik fanlar bo'yicha bepul kurslar: darslar, misollar, mashqlar va testlar.",
 };
 
 export const viewport: Viewport = {

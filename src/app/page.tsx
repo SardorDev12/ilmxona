@@ -2,6 +2,8 @@ import Link from "next/link";
 import { courses, latestLessons, totals } from "@/content";
 import { learningPaths } from "@/content/paths";
 import { contributors } from "@/content/contributors";
+import { subjects } from "@/content/subjects";
+import { cn } from "@/lib/utils";
 import { CourseCard, PathCard, Avatar } from "@/components/content/cards";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,8 +19,8 @@ export default function HomePage() {
           O&apos;zbek tilida bepul bilim o&apos;rganing.
         </h1>
         <p className="max-w-xl text-lg text-muted-foreground">
-          Dasturlash va boshqa amaliy fanlarni darslar, misollar, mashqlar va
-          testlar orqali o&apos;rganing.
+          Amaliy va akademik fanlarni darslar, misollar, mashqlar va testlar
+          orqali o&apos;rganing.
         </p>
 
         <form
@@ -41,6 +43,47 @@ export default function HomePage() {
           <Stat value={totals.contributors} label="muallif" />
         </dl>
       </section>
+
+      <Section title="Bilim sohalari">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {subjects.map((subject) => {
+            const live = subject.courseCount > 0;
+
+            const body = (
+              <Card
+                className={cn(
+                  "h-full transition-shadow",
+                  live ? "group-hover:shadow-md" : "opacity-60",
+                )}
+              >
+                <CardContent className="flex flex-col gap-1 p-4">
+                  <h3 className="font-semibold">{subject.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {subject.description}
+                  </p>
+                  <span className="mt-1 text-xs font-medium text-muted-foreground">
+                    {live
+                      ? `${subject.courseCount} ta kurs`
+                      : "Tez orada"}
+                  </span>
+                </CardContent>
+              </Card>
+            );
+
+            return live ? (
+              <Link
+                key={subject.name}
+                href="/courses"
+                className="group rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {body}
+              </Link>
+            ) : (
+              <div key={subject.name}>{body}</div>
+            );
+          })}
+        </div>
+      </Section>
 
       <Section
         title="Mashhur kurslar"

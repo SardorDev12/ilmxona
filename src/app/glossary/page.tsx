@@ -5,7 +5,7 @@ import { TermCard } from "@/components/content/cards";
 export const metadata: Metadata = {
   title: "Lug'at",
   description:
-    "Dasturlash atamalarining o'zbek tilidagi izohli lug'ati: API, DOM, JSON, HTTP va boshqalar.",
+    "Atamalarning o'zbek tilidagi izohli lug'ati — ta'rifi, inglizcha va ruscha muqobili bilan.",
 };
 
 export default function GlossaryPage() {
@@ -16,8 +16,8 @@ export default function GlossaryPage() {
       <header className="mb-8 flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Lug&apos;at</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Texnik atamalarning o&apos;zbekcha izohi, inglizcha va ruscha
-          muqobili bilan.
+          Atamalarning o&apos;zbekcha izohi, inglizcha va ruscha muqobili
+          bilan.
         </p>
       </header>
 
