@@ -1,7 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import type { Course } from "@/content/types";
+import {
+  getServerCourseDrafts,
+  getStoredCourseDrafts,
+  subscribeToCourseDrafts,
+} from "@/lib/studio/course-draft";
 import {
   EMPTY_DRAFT,
   EMPTY_EXERCISE,
@@ -36,7 +41,21 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function LessonEditor({ courses }: { courses: Course[] }) {
+/** A course a lesson can be filed under — published, or the author's own draft. */
+export type CourseOption = {
+  slug: string;
+  title: string;
+  modules: string[];
+  isDraft?: boolean;
+};
+
+export function LessonEditor({
+  publishedCourses,
+  initialCourseSlug = "",
+}: {
+  publishedCourses: CourseOption[];
+  initialCourseSlug?: string;
+}) {
   // A draft left over from a previous visit. Read through the store rather
   // than an effect so the server render (no localStorage) and the first
   // client render agree.
@@ -46,12 +65,35 @@ export function LessonEditor({ courses }: { courses: Course[] }) {
     getServerDraft,
   );
 
+  // Courses this author has drafted but not yet published. Without these a
+  // lesson for a brand-new subject would have nowhere to go.
+  const courseDrafts = useSyncExternalStore(
+    subscribeToCourseDrafts,
+    getStoredCourseDrafts,
+    getServerCourseDrafts,
+  );
+
   const [edited, setEdited] = useState<LessonDraft | null>(null);
   const [tab, setTab] = useState<TabId>("meta");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [showIssues, setShowIssues] = useState(false);
 
-  const draft = edited ?? stored ?? EMPTY_DRAFT;
+  const courses: CourseOption[] = [
+    ...publishedCourses,
+    ...courseDrafts.map((c) => ({
+      slug: c.slug,
+      title: c.title || "Nomsiz kurs",
+      modules: c.moduleTitles.filter((m) => m.trim() !== ""),
+      isDraft: true,
+    })),
+  ];
+
+  const initial =
+    initialCourseSlug && !stored
+      ? { ...EMPTY_DRAFT, courseSlug: initialCourseSlug }
+      : EMPTY_DRAFT;
+
+  const draft = edited ?? stored ?? initial;
   const restored = edited === null && stored !== null;
 
   const issues = validationIssues(draft);
@@ -171,7 +213,15 @@ export function LessonEditor({ courses }: { courses: Course[] }) {
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Kurs" htmlFor="course">
+            <Field
+              label="Kurs"
+              htmlFor="course"
+              hint={
+                course?.isDraft
+                  ? "Bu kurs hali qoralama — u tasdiqlangach dars ham ko'rinadi."
+                  : undefined
+              }
+            >
               <Select
                 id="course"
                 value={draft.courseSlug}
@@ -181,16 +231,31 @@ export function LessonEditor({ courses }: { courses: Course[] }) {
                   setDraft((d) => ({
                     ...d,
                     courseSlug,
-                    moduleTitle: selected?.modules[0]?.title ?? "",
+                    moduleTitle: selected?.modules[0] ?? "",
                   }));
                 }}
               >
                 <option value="">Tanlang...</option>
-                {courses.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.title}
-                  </option>
-                ))}
+                <optgroup label="Nashr etilgan kurslar">
+                  {courses
+                    .filter((c) => !c.isDraft)
+                    .map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.title}
+                      </option>
+                    ))}
+                </optgroup>
+                {courses.some((c) => c.isDraft) && (
+                  <optgroup label="Sizning qoralamalaringiz">
+                    {courses
+                      .filter((c) => c.isDraft)
+                      .map((c) => (
+                        <option key={c.slug} value={c.slug}>
+                          {c.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
               </Select>
             </Field>
 
@@ -201,14 +266,29 @@ export function LessonEditor({ courses }: { courses: Course[] }) {
                 disabled={!course}
                 onChange={(e) => set("moduleTitle", e.target.value)}
               >
-                {course?.modules.map((m) => (
-                  <option key={m.title} value={m.title}>
-                    {m.title}
-                  </option>
-                )) ?? <option value="">Avval kursni tanlang</option>}
+                {course ? (
+                  course.modules.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Avval kursni tanlang</option>
+                )}
               </Select>
             </Field>
           </div>
+
+          <p className="-mt-2 text-sm text-muted-foreground">
+            Kerakli kurs ro&apos;yxatda yo&apos;qmi?{" "}
+            <Link
+              href="/contributor/courses/new"
+              className="font-medium text-primary hover:underline"
+            >
+              Yangi kurs yarating
+            </Link>
+            .
+          </p>
 
           <Field
             label="Davomiyligi (daqiqa)"

@@ -1,4 +1,5 @@
 import type { Block, Exercise, QuizQuestion } from "@/content/types";
+import { createLocalStore } from "./store";
 
 /** Content workflow states from docs/PRD.md §23. */
 export type DraftStatus =
@@ -147,69 +148,14 @@ export function validationIssues(draft: LessonDraft): string[] {
 
 const STORAGE_KEY = "ilmxona:lesson-draft";
 
-/**
- * Drafts live in the browser until the content backend exists. Reads and
- * writes are guarded: storage throws in private mode and some embedded
- * browsers, and a half-written value shouldn't take the editor down.
- */
-// useSyncExternalStore calls getSnapshot on every render and compares by
-// reference, so the parsed draft is cached against the raw string it came
-// from — re-parsing would hand back a new object each time and loop.
-let cachedRaw: string | null = null;
-let cachedDraft: LessonDraft | null = null;
+const lessonStore = createLocalStore<LessonDraft | null>(
+  STORAGE_KEY,
+  null,
+  (parsed) => ({ ...EMPTY_DRAFT, ...(parsed as LessonDraft) }),
+);
 
-/** Snapshot of the stored draft. Stable reference until storage changes. */
-export function getStoredDraft(): LessonDraft | null {
-  let raw: string | null;
-  try {
-    raw = window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-    try {
-      cachedDraft = raw
-        ? { ...EMPTY_DRAFT, ...(JSON.parse(raw) as LessonDraft) }
-        : null;
-    } catch {
-      cachedDraft = null;
-    }
-  }
-
-  return cachedDraft;
-}
-
-/** Server render has no localStorage, so it starts from nothing. */
-export function getServerDraft(): LessonDraft | null {
-  return null;
-}
-
-/** Picks up a draft saved by the same author in another tab. */
-export function subscribeToStoredDraft(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  return () => window.removeEventListener("storage", onChange);
-}
-
-export function saveDraft(draft: LessonDraft): boolean {
-  try {
-    const raw = JSON.stringify(draft);
-    window.localStorage.setItem(STORAGE_KEY, raw);
-    cachedRaw = raw;
-    cachedDraft = draft;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function clearDraft() {
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-    cachedRaw = null;
-    cachedDraft = null;
-  } catch {
-    // Nothing to do — the draft simply stays where it is.
-  }
-}
+export const getStoredDraft = lessonStore.read;
+export const getServerDraft = lessonStore.readServer;
+export const subscribeToStoredDraft = lessonStore.subscribe;
+export const saveDraft = lessonStore.write;
+export const clearDraft = lessonStore.clear;

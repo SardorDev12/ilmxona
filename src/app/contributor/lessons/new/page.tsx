@@ -9,10 +9,15 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default async function NewLessonPage() {
+export default async function NewLessonPage({
+  searchParams,
+}: PageProps<"/contributor/lessons/new">) {
   // Contributors and above may draft; publishing stays with reviewers
   // (docs/PRD.md §22, §28).
   const profile = await requireRole("CONTRIBUTOR", "/contributor/lessons/new");
+
+  const { course } = await searchParams;
+  const initialCourseSlug = Array.isArray(course) ? course[0] : (course ?? "");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -38,7 +43,14 @@ export default async function NewLessonPage() {
         </p>
       </header>
 
-      <LessonEditor courses={courses} />
+      <LessonEditor
+        publishedCourses={courses.map((c) => ({
+          slug: c.slug,
+          title: c.title,
+          modules: c.modules.map((m) => m.title),
+        }))}
+        initialCourseSlug={initialCourseSlug}
+      />
     </div>
   );
 }

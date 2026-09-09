@@ -66,9 +66,18 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           {hasRole(profile.role, "CONTRIBUTOR") && (
-            <ButtonLink href="/contributor/lessons/new" size="sm">
-              Yangi dars
-            </ButtonLink>
+            <>
+              <ButtonLink
+                href="/contributor/courses/new"
+                size="sm"
+                variant="outline"
+              >
+                Yangi kurs
+              </ButtonLink>
+              <ButtonLink href="/contributor/lessons/new" size="sm">
+                Yangi dars
+              </ButtonLink>
+            </>
           )}
           <form action={signOut}>
             <Button type="submit" variant="outline" size="sm">
