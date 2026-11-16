@@ -307,6 +307,34 @@ export async function authorableCourses(userId: string) {
   }));
 }
 
+/**
+ * A course as its author works on it: every lesson whatever its status,
+ * plus the modules to file them under. RLS already limits this to the
+ * author's own courses and to moderators.
+ */
+export async function authorCourse(slug: string) {
+  const course = await getCourseBySlug(slug);
+  if (!course) return null;
+
+  const [modules, lessons] = await Promise.all([
+    courseModules(course.id),
+    courseLessons(course.id, false),
+  ]);
+
+  return { course, modules, lessons };
+}
+
+/** One lesson of a course, by slug, for the editor. */
+export async function authorLesson(courseSlug: string, lessonSlug: string) {
+  const found = await authorCourse(courseSlug);
+  if (!found) return null;
+
+  const lesson = found.lessons.find((l) => l.slug === lessonSlug);
+  if (!lesson) return null;
+
+  return { ...found, lesson };
+}
+
 /** Published work by one author, for their public profile. */
 export async function publishedByAuthor(authorId: string) {
   if (!isSupabaseConfigured()) return { courses: [], lessons: [] };

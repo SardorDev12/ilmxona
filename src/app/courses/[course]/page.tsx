@@ -133,7 +133,7 @@ export default async function CoursePage({
                     Bu kursda hali dars yo&apos;q.
                   </p>
                   <ButtonLink
-                    href={`/contributor/lessons/new?course=${course.slug}`}
+                    href={`/contributor/courses/${course.slug}/lessons/new`}
                     size="sm"
                   >
                     Dars qo&apos;shish

@@ -1,56 +1,44 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { requireProfile } from "@/lib/auth/session";
 import { authorableCourses } from "@/lib/content/queries";
-import { LessonEditor } from "@/components/studio/lesson-editor";
-import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/content/cards";
+import { Card } from "@/components/ui/card";
+import { ButtonLink } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Yangi dars",
   robots: { index: false },
 };
 
-export default async function NewLessonPage({
+/**
+ * A lesson belongs to a course, so writing one starts from that course's
+ * workspace. This route only exists to pick the course for anyone who
+ * arrives here from an old link or the site header.
+ */
+export default async function PickCoursePage({
   searchParams,
 }: PageProps<"/contributor/lessons/new">) {
-  // Any signed-in user may draft and submit. Publishing stays with
-  // moderators — review is what filters quality, not a role gate on who
-  // is allowed to write.
   const profile = await requireProfile("/contributor/lessons/new");
-  const courses = await authorableCourses(profile.id);
 
   const { course } = await searchParams;
-  const initialCourseSlug = Array.isArray(course) ? course[0] : (course ?? "");
+  const requested = Array.isArray(course) ? course[0] : course;
+  if (requested) redirect(`/contributor/courses/${requested}/lessons/new`);
+
+  const courses = await authorableCourses(profile.id);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <nav className="mb-5 text-sm text-muted-foreground">
-        <Link href="/dashboard" className="hover:text-foreground">
-          Boshqaruv paneli
-        </Link>
-        <span className="mx-2" aria-hidden>
-          /
-        </span>
-        <span className="text-foreground">Yangi dars</span>
-      </nav>
-
-      <header className="mb-8 flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Yangi dars</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Darsni yozib, ko&apos;rib chiqishga yuboring. Tasdiqlangandan
-          keyin u nashr etiladi — mualliflar darsni
-          to&apos;g&apos;ridan-to&apos;g&apos;ri nashr eta olmaydi.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Muallif: {profile.display_name ?? profile.username}
-        </p>
-      </header>
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="mb-2 text-3xl font-bold tracking-tight">Yangi dars</h1>
+      <p className="mb-8 text-muted-foreground">
+        Dars qaysi kursga tegishli?
+      </p>
 
       {courses.length === 0 ? (
         <EmptyState
           title="Avval kurs kerak"
-          description="Dars kursga tegishli bo'ladi. Kurs yarating — keyin unga dars qo'shasiz."
+          description="Dars kursning ichida turadi. Kurs yarating — keyin unga dars yozasiz."
           action={
             <ButtonLink href="/contributor/courses/new">
               Kurs yaratish
@@ -58,10 +46,25 @@ export default async function NewLessonPage({
           }
         />
       ) : (
-        <LessonEditor
-          courses={courses}
-          initialCourseSlug={initialCourseSlug}
-        />
+        <Card>
+          <ul className="divide-y divide-border">
+            {courses.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/contributor/courses/${c.slug}/lessons/new`}
+                  className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-muted"
+                >
+                  <span className="text-sm font-medium">{c.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {c.modules.length > 0
+                      ? `${c.modules.length} modul`
+                      : "Modulsiz"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
     </div>
   );

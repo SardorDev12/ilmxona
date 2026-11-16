@@ -26,9 +26,8 @@ export default async function NewCoursePage() {
       <header className="mb-8 flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Yangi kurs</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Avval kursning tuzilishini belgilang — modullar, o&apos;quv
-          natijalari va talablar. Keyin har bir modulga dars
-          qo&apos;shasiz.
+          Kurs nomini yozing — shu yetarli. Tavsif, modullar va
+          qolganini keyin, istalgan vaqtda qo&apos;shasiz.
         </p>
       </header>
 

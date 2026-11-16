@@ -58,7 +58,7 @@ export function ContentList({ courses }: { courses: CourseGroup[] }) {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
-                      href={`/courses/${course.slug}`}
+                      href={`/contributor/courses/${course.slug}`}
                       className="font-medium hover:text-primary"
                     >
                       {course.title}
@@ -84,11 +84,11 @@ export function ContentList({ courses }: { courses: CourseGroup[] }) {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <ButtonLink
-                    href={`/contributor/lessons/new?course=${course.slug}`}
+                    href={`/contributor/courses/${course.slug}`}
                     size="sm"
                     variant="outline"
                   >
-                    Dars qo&apos;shish
+                    Ochish
                   </ButtonLink>
 
                   {canSubmit && (

@@ -76,9 +76,9 @@ export async function createCourse(
   }
 
   revalidatePath("/dashboard");
-  // The author can read their own draft, so the course page is
-  // the natural place to land — with a "add a lesson" call to action.
-  redirect(`/courses/${course.slug}`);
+  // Straight into the workspace for this course: the next step is
+  // adding a lesson, and that is what the workspace leads with.
+  redirect(`/contributor/courses/${course.slug}`);
 }
 
 export async function createLesson(
@@ -106,6 +106,8 @@ export async function createLesson(
     .eq("id", courseId)
     .maybeSingle<{ slug: string }>();
 
+  const position = await nextLessonPosition(supabase, courseId, formData);
+
   // Adding a lesson is an update to its course, so submitting it here is
   // what puts that course in the moderator's queue — there is no separate
   // lesson review step.
@@ -124,7 +126,7 @@ export async function createLesson(
     quiz,
     related_terms: splitLines(formData.get("related_terms")),
     duration_min: Number(formData.get("duration_min")) || 10,
-    position: Number(formData.get("position")) || 0,
+    position,
     author_id: profile.id,
     status: submit ? "SUBMITTED" : "DRAFT",
   });
@@ -138,7 +140,197 @@ export async function createLesson(
 
   revalidatePath("/dashboard");
   revalidatePath("/admin/review");
-  redirect(course ? `/courses/${course.slug}` : "/dashboard");
+  redirect(
+    course ? `/contributor/courses/${course.slug}` : "/dashboard",
+  );
+}
+
+/**
+ * Edit a course that has not been published yet. A published course is
+ * left alone on purpose: changing it in place would alter what a
+ * moderator already approved, with no second review.
+ */
+export async function updateCourse(
+  _prev: ContentFormState,
+  formData: FormData,
+): Promise<ContentFormState> {
+  await requireProfile("/dashboard");
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const slug = slugify(String(formData.get("slug") ?? "") || title);
+
+  if (!id) return { error: "Kurs tanlanmagan." };
+  if (!title) return { error: "Kurs nomi kiritilmagan." };
+  if (!slug) return { error: "URL manzili bo'sh." };
+
+  const { data: course, error } = await supabase
+    .from("courses")
+    .update({
+      slug,
+      title,
+      subtitle: String(formData.get("subtitle") ?? "").trim(),
+      description: String(formData.get("description") ?? "").trim(),
+      category: String(formData.get("category") ?? "Boshqa"),
+      difficulty: String(formData.get("difficulty") ?? "Boshlang'ich"),
+      duration_hours: Number(formData.get("duration_hours")) || 10,
+      accent: String(formData.get("accent") ?? "from-sky-500 to-blue-600"),
+      objectives: splitLines(formData.get("objectives")),
+      prerequisites: splitLines(formData.get("prerequisites")),
+    })
+    .eq("id", id)
+    .select("slug")
+    .maybeSingle<{ slug: string }>();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Bu URL manzili allaqachon band." };
+    }
+    return { error: `Saqlab bo'lmadi: ${error.message}` };
+  }
+
+  if (!course) {
+    return {
+      error:
+        "Bu kursni tahrirlab bo'lmaydi — u nashr etilgan yoki sizga tegishli emas.",
+    };
+  }
+
+  await syncModules(supabase, id, splitLines(formData.get("modules")));
+
+  revalidatePath("/dashboard");
+  redirect(`/contributor/courses/${course.slug}`);
+}
+
+/** Edit a lesson, optionally sending it to review in the same step. */
+export async function updateLesson(
+  _prev: ContentFormState,
+  formData: FormData,
+): Promise<ContentFormState> {
+  await requireProfile("/dashboard");
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const slug = slugify(String(formData.get("slug") ?? "") || title);
+
+  if (!id) return { error: "Dars tanlanmagan." };
+  if (!title) return { error: "Dars sarlavhasi kiritilmagan." };
+  if (!slug) return { error: "URL manzili bo'sh." };
+
+  const submit = formData.get("submit") === "1";
+
+  const { data: lesson, error } = await supabase
+    .from("lessons")
+    .update({
+      module_id: String(formData.get("module_id") ?? "") || null,
+      slug,
+      title,
+      intro: String(formData.get("intro") ?? "").trim(),
+      why_important: String(formData.get("why_important") ?? "").trim(),
+      body: parseJson<Block[]>(formData.get("body"), []),
+      common_mistakes: splitLines(formData.get("common_mistakes")),
+      exercise: parseJson<Exercise | null>(formData.get("exercise"), null),
+      quiz: parseJson<QuizQuestion[]>(formData.get("quiz"), []),
+      related_terms: splitLines(formData.get("related_terms")),
+      duration_min: Number(formData.get("duration_min")) || 10,
+      ...(submit ? { status: "SUBMITTED", review_note: null } : {}),
+    })
+    .eq("id", id)
+    .select("courses!inner(slug)")
+    .maybeSingle<{ courses: { slug: string } }>();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Bu kursda shunday URL manzili allaqachon bor." };
+    }
+    return { error: `Saqlab bo'lmadi: ${error.message}` };
+  }
+
+  if (!lesson) {
+    return {
+      error:
+        "Bu darsni tahrirlab bo'lmaydi — u nashr etilgan yoki ko'rib chiqilmoqda.",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/admin/review");
+  redirect(`/contributor/courses/${lesson.courses.slug}`);
+}
+
+/** Remove a lesson the author has not yet had published. */
+export async function deleteLesson(
+  _prev: ContentFormState,
+  formData: FormData,
+): Promise<ContentFormState> {
+  await requireProfile("/dashboard");
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Dars tanlanmagan." };
+
+  const { error, count } = await supabase
+    .from("lessons")
+    .delete({ count: "exact" })
+    .eq("id", id);
+
+  if (error) return { error: `O'chirib bo'lmadi: ${error.message}` };
+  if (count === 0) {
+    return {
+      error: "O'chirib bo'lmadi — nashr etilgan darsni moderator o'chiradi.",
+    };
+  }
+
+  revalidatePath("/dashboard");
+  return { ok: "Dars o'chirildi." };
+}
+
+/** Move one lesson up or down in its course. */
+export async function moveLesson(
+  _prev: ContentFormState,
+  formData: FormData,
+): Promise<ContentFormState> {
+  await requireProfile("/dashboard");
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "");
+  const direction = formData.get("direction") === "up" ? -1 : 1;
+  if (!id) return { error: "Dars tanlanmagan." };
+
+  const { data: lesson } = await supabase
+    .from("lessons")
+    .select("id, course_id, position")
+    .eq("id", id)
+    .maybeSingle<{ id: string; course_id: string; position: number }>();
+
+  if (!lesson) return { error: "Dars topilmadi." };
+
+  const { data: siblings } = await supabase
+    .from("lessons")
+    .select("id, position")
+    .eq("course_id", lesson.course_id)
+    .order("position", { ascending: true })
+    .returns<{ id: string; position: number }[]>();
+
+  const ordered = siblings ?? [];
+  const index = ordered.findIndex((l) => l.id === id);
+  const target = index + direction;
+  if (index === -1 || target < 0 || target >= ordered.length) return {};
+
+  // Positions are rewritten from scratch rather than swapped: rows
+  // created before this feature can share a position, and a swap between
+  // two equal values would do nothing.
+  [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+
+  for (const [position, row] of ordered.entries()) {
+    if (row.position === position) continue;
+    await supabase.from("lessons").update({ position }).eq("id", row.id);
+  }
+
+  revalidatePath("/dashboard");
+  return {};
 }
 
 /**
@@ -426,5 +618,80 @@ function parseJson<T>(value: FormDataEntryValue | null, fallback: T): T {
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
+  }
+}
+
+/**
+ * New lessons go to the end of the course. Asking the database rather
+ * than trusting a number from the form keeps the order stable when two
+ * lessons are written in different tabs.
+ */
+async function nextLessonPosition(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  courseId: string,
+  formData: FormData,
+): Promise<number> {
+  const explicit = formData.get("position");
+  if (explicit !== null && String(explicit) !== "") return Number(explicit);
+
+  const { data } = await supabase
+    .from("lessons")
+    .select("position")
+    .eq("course_id", courseId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ position: number }>();
+
+  return data ? data.position + 1 : 0;
+}
+
+/**
+ * Modules are edited as a list of titles. Matching by title keeps the
+ * module ids — and therefore the lessons filed under them — intact when
+ * the author only reorders or adds one.
+ */
+async function syncModules(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  courseId: string,
+  titles: string[],
+) {
+  const { data: existing } = await supabase
+    .from("modules")
+    .select("id, title, position")
+    .eq("course_id", courseId)
+    .returns<{ id: string; title: string; position: number }[]>();
+
+  const current = existing ?? [];
+  const keep = new Set<string>();
+
+  for (const [position, title] of titles.entries()) {
+    const match = current.find((m) => m.title === title && !keep.has(m.id));
+
+    if (match) {
+      keep.add(match.id);
+      if (match.position !== position) {
+        await supabase.from("modules").update({ position }).eq("id", match.id);
+      }
+      continue;
+    }
+
+    const { data: created } = await supabase
+      .from("modules")
+      .insert({ course_id: courseId, title, position })
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (created) keep.add(created.id);
+  }
+
+  // Dropping a module leaves its lessons in the course, unfiled, rather
+  // than deleting them with it.
+  const removed = current.filter((m) => !keep.has(m.id)).map((m) => m.id);
+  if (removed.length > 0) {
+    await supabase
+      .from("lessons")
+      .update({ module_id: null })
+      .in("module_id", removed);
+    await supabase.from("modules").delete().in("id", removed);
   }
 }

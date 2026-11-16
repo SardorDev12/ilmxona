@@ -23,15 +23,27 @@ When `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` are absent, th
 
 | Step | Who | Where |
 | --- | --- | --- |
-| Write a course (title, modules, objectives) | any signed-in user | `/contributor/courses/new` |
-| Write a lesson (blocks, exercise, quiz) | any signed-in user | `/contributor/lessons/new` |
-| Send the course, its lessons included, to review | the author | `/dashboard` |
+| Name a course — a title is the only required field | any signed-in user | `/contributor/courses/new` |
+| Work on it: add, reorder, edit and delete its lessons | the author | `/contributor/courses/<course>` |
+| Write a lesson as prose, not as a pile of blocks | the author | `/contributor/courses/<course>/lessons/new` |
+| Send the course, its lessons included, to review | the author | the course workspace |
 | Read the course and each new lesson, then publish or return | MODERATOR, ADMIN | `/admin/review/<course>` |
 | Delete a course, and every lesson under it | ADMIN | `/admin/review/<course>` |
 
 A course reaches the queue two ways: it is itself `SUBMITTED` (new, never published), or it is live and carries `SUBMITTED` lessons (an update). The queue badge in the admin sidebar is the notification. Approving a submitted course publishes every lesson waiting inside it; a moderator can also approve or return one lesson at a time from the same page. Returning work on a **live** course marks only the pending lessons `CHANGES_REQUESTED` — sending the course itself back would pull an already-published course off the site over one new lesson.
 
 Publishing is reachable only through the moderator policies in `006_content.sql` — an author's own `update` policy refuses any status but `DRAFT` or `SUBMITTED`, so the review step cannot be skipped from the client. Publishing someone's first piece of content promotes them from `USER` to `CREATOR`.
+
+### Authoring UX
+
+The course workspace at `/contributor/courses/<course>` is the hub: a three-step progress strip, the lesson list with reorder and delete, and the single submit button. Course creation lands there rather than on the public page, because the next thing an author needs is a lesson, not a preview.
+
+Two decisions worth knowing about:
+
+- **Lesson bodies are written as prose.** The database stores `Block[]`, but asking someone to click "add paragraph" eleven times to write eleven paragraphs is why authoring felt heavy. `src/lib/content/markdown.ts` converts between blocks and a small Markdown subset (`##`, `-`, `1.`, `>`, `!`, fenced code) in both directions, so the writing surface is a plain textarea. Tables and interactive examples have no sensible plain-text spelling, so they survive the round trip as `::block:<n>` markers and are edited in the structured "Bloklar" mode. The round trip is covered by assertions, including that editing text around a table leaves the table intact.
+- **Drafts autosave to `localStorage`,** keyed per course and lesson, and are *offered* back on return rather than silently restored — the author may have meant to start over. The entry is cleared on submit.
+
+Editing exists for anything not yet in a moderator's hands: a `DRAFT` or `CHANGES_REQUESTED` course or lesson can be changed; a `SUBMITTED` one cannot, because that would alter what a moderator is reading, and a `PUBLISHED` one cannot, because it would change approved content without a second review.
 
 Deleting a course cascades to its modules and lessons. RLS allows it for a moderator on any course and for an author only while their own course is still a draft; the UI additionally asks an admin to type the course title back.
 
