@@ -52,11 +52,31 @@ Deleting a course cascades to its modules and lessons. RLS allows it for a moder
 1. **Create a Supabase project** at [supabase.com](https://supabase.com).
 2. Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
 3. Enable the **Google** provider under Supabase Auth → Providers (Telegram is not a native Supabase provider — see "Known gaps").
-4. Apply the schema: open the Supabase SQL editor and run every file in [`supabase/sql/`](supabase/sql) **in filename order** (`001` … `007`). Together they create the `role` and `content_status` enums, the `profiles` / `audit_logs` / content tables, the trigger that auto-creates a profile for every new auth user, and the grants and RLS policies. Grants matter as much as policies: Postgres checks table privileges *before* RLS, so a table with policies but no `grant` returns `permission denied` (42501).
+4. Apply the schema: open the Supabase SQL editor and run every file in [`supabase/sql/`](supabase/sql) **in filename order** (`001` … `008`). Together they create the `role` and `content_status` enums, the `profiles` / `audit_logs` / content tables, the trigger that auto-creates a profile for every new auth user, and the grants and RLS policies. Grants matter as much as policies: Postgres checks table privileges *before* RLS, so a table with policies but no `grant` returns `permission denied` (42501).
+
+5. **Make yourself an administrator.** Every new profile is a `USER`, and only a `MODERATOR` or `ADMIN` can publish. Until one exists, submitted courses sit in the queue with nobody able to approve them. Sign in once so your profile row exists, then run this in the SQL editor:
+
+   ```sql
+   update public.profiles set role = 'ADMIN' where username = 'your-username';
+   ```
+
+   This is deliberately a manual step: there is no code path that grants `ADMIN`, so there is none to abuse.
+
+## Testing the authorization model
+
+```bash
+bash supabase/test/roundtrip.sh [port]
+```
+
+Against any local Postgres, this builds a database shaped like a Supabase project — `auth.uid()`, the `anon` / `authenticated` / `service_role` roles, **and the public-schema default privileges a real project ships with** — applies every migration, then walks author → moderator → public with one transaction per request, the way PostgREST runs them. It asserts both directions: that the legitimate flow works, and that each thing that should be refused is (47 assertions).
+
+Reproducing Supabase's default privileges is the point rather than an incidental detail — the escalation bug described below is invisible without them.
 
 ## Data access
 
 The app talks to Postgres through **PostgREST via `@supabase/supabase-js`**, not a direct database connection. That keeps every query on `fetch`, which works unchanged on Node.js and on the Cloudflare Workers runtime — no TCP driver, no connection pooling, no Hyperdrive binding needed.
+
+**Grants and RLS are two independent checks, and Postgres applies grants first.** A table with policies but no `grant` returns `permission denied` (42501) no matter how permissive its policies are. The subtler half is that grants are *additive*: a Supabase project sets default privileges that hand `authenticated` **all** privileges on every table created afterwards, so a narrow `grant update (col, col)` adds nothing and restricts nothing. That cost us a real privilege-escalation hole — any signed-in user could `update({ role: 'ADMIN' })` on their own profile row, since the column grant was the only thing guarding `role` and the "update your own profile" policy let the write through. `008_tighten_grants.sql` revokes the blanket grants, re-grants exactly what is intended, stops future tables inheriting the same defaults, and adds a trigger that refuses a role change from the API roles — two layers, because the first one had already failed silently. Verify on a live project with the query at the end of that file: it must return exactly `avatar_url, bio, display_name, username`.
 
 The tradeoff: **Row Level Security is the real authorization boundary.** Queries run with the signed-in user's own JWT, so an RLS policy gap is a data leak — the `requireRole` checks in `src/lib/auth/session.ts` are for redirects and UI, not security. Any new table needs RLS policies in the same SQL migration that creates it.
 
@@ -65,6 +85,7 @@ SQL files in `supabase/sql/` are the source of truth for schema; apply them in f
 ## Project layout
 
 ```
+supabase/test/            Round-trip assertions over the real schema and RLS
 src/lib/content/          Content types, queries (server-only) and server actions
 src/components/content/   Lesson renderer, code playground, quiz, exercise, cards
 src/components/studio/    Course/lesson editors, the author's content list, review queue
